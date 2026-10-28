@@ -3,3 +3,4 @@ demucs==4.0.1
 numpy>=1.24,<2.0
 soundfile>=0.12.1
 pytest>=8.0
+imageio-ffmpeg>=0.4.9
