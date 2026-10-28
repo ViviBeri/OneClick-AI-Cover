@@ -60,6 +60,11 @@ def prepare_recordings(
             raise ValueError(f"Recording is empty: {source.name}")
         valid.append(source)
     target.mkdir(parents=True, exist_ok=True)
+    # Reusing a dataset name must not leave recordings from an older, larger
+    # selection in the training set. Remove only files created by this helper.
+    for previous_output in target.glob("recording_*.wav"):
+        if previous_output.is_file():
+            previous_output.unlink()
     count = 0
     for index, source in enumerate(valid, start=1):
         output = target / f"recording_{index:03d}.wav"
