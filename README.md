@@ -31,6 +31,10 @@ Setup downloads several large packages and may take a long time. You need a stab
 
 Windows 10/11 x64; 8 GB RAM is a bare starting point, while 16 GB+ is recommended. An NVIDIA GPU is strongly recommended for usable inference speed. Low-end CPUs may be extremely slow or run out of memory. Voice training is available only through the upstream RVC training interface launched from the experimental tab; the dataset preparation and training stages are not yet automated by this app.
 
+## Training your own voice
+
+See [`docs/voice-training.md`](docs/voice-training.md) for local recording preparation and the experimental RVC training UI. If your PC cannot train the model, read [`docs/remote-training.md`](docs/remote-training.md) before choosing a cloud GPU provider. Remote training is not automated by this app, and free compute is not guaranteed.
+
 ## Models and rights
 
 No voice models or copyrighted songs are bundled. Add only voice models you have permission to use and respect the rights of the original audio. Third-party dependencies and model weights have separate license terms; see `docs/THIRD_PARTY.md`.
