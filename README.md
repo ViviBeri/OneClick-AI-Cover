@@ -33,7 +33,7 @@ Windows 10/11 x64; 8 GB RAM is a bare starting point, while 16 GB+ is recommende
 
 ## Training your own voice
 
-See [`docs/voice-training.md`](docs/voice-training.md) for local recording preparation and the experimental RVC training UI. If your PC cannot train the model, read [`docs/remote-training.md`](docs/remote-training.md) before choosing a cloud GPU provider. Remote training is not automated by this app, and free compute is not guaranteed.
+See [`docs/voice-training.md`](docs/voice-training.md) for local recording preparation and the experimental RVC training UI. If your PC cannot train the model, read [`docs/remote-training.md`](docs/remote-training.md) for the **free-only, Kaggle-first** plan. No paid GPU provider or paid API is required by the project; free GPU availability is limited, and a tested remote-training notebook is still under development.
 
 ## Models and rights
 
