@@ -9,6 +9,8 @@ from oneclick_cover.validation import validate_audio_file, validate_voice_model
 from oneclick_cover.separation import separate_vocals
 from oneclick_cover.conversion import convert_voice
 from oneclick_cover.training import launch_training_ui
+from oneclick_cover.dataset import prepare_recordings
+from oneclick_cover.settings import ROOT
 for folder in (VOICE_DIR, OUTPUT_DIR, LOG_DIR): folder.mkdir(parents=True, exist_ok=True)
 logging.basicConfig(filename=LOG_DIR / "oneclick-cover.log", level=logging.INFO)
 def models(): return sorted(p.name for p in VOICE_DIR.glob("*.pth") if p.is_file())
@@ -34,6 +36,16 @@ def import_voice_model(uploaded_file):
     except Exception as exc:
         logging.exception("Voice model import failed")
         raise gr.Error(str(exc)) from exc
+def prepare_training_dataset(uploaded_files, dataset_name, progress=gr.Progress()):
+    try:
+        progress(0.1, desc="Checking recordings")
+        folder, count = prepare_recordings(uploaded_files or [], dataset_name, ROOT / "datasets")
+        progress(1.0, desc="Recordings prepared")
+        return str(folder), f"Prepared {count} recording(s). In the RVC training UI, use this folder path as the dataset/training folder. Review the upstream RVC preprocessing instructions before starting training."
+    except Exception as exc:
+        logging.exception("Dataset preparation failed")
+        raise gr.Error(str(exc)) from exc
+
 def generate(song, model, pitch, vocal_gain, instrumental_gain, fmt, progress=gr.Progress()):
     if not song: raise gr.Error("Choose an input song first.")
     if not model: raise gr.Error("Add an authorized .pth model to models/voices, then refresh.")
@@ -71,6 +83,21 @@ with gr.Blocks(title="OneClick-AI-Cover") as demo:
         import_button = gr.Button("Import model", variant="primary")
         import_status = gr.Textbox(label="Import status", interactive=False)
         import_button.click(fn=import_voice_model, inputs=[model_upload], outputs=[model, import_status])
+    with gr.Tab("Prepare Voice Recordings"):
+        gr.Markdown("""## Prepare your own voice recordings
+Upload recordings of your own voice, or recordings you have explicit permission to use. The app converts each file to mono 44.1 kHz WAV and stores them in a local dataset folder. It does not upload them to a cloud service.
+
+- Use clean, dry recordings with one speaker.
+- Avoid background music, reverb, clipping, and other speakers.
+- This step prepares files only; it does not start training automatically.
+- FFmpeg must be installed and available on PATH for conversion.
+""")
+        dataset_name = gr.Textbox(label="Dataset folder name", value="MyVoice")
+        recording_files = gr.File(label="Recordings (select multiple)", file_count="multiple", file_types=[".wav", ".mp3", ".flac", ".m4a", ".ogg", ".aac"], type="filepath")
+        prepare_button = gr.Button("Prepare recordings", variant="primary")
+        dataset_path = gr.Textbox(label="Prepared dataset path (copy into RVC training UI)", interactive=False)
+        dataset_status = gr.Textbox(label="Preparation status", interactive=False)
+        prepare_button.click(fn=prepare_training_dataset, inputs=[recording_files, dataset_name], outputs=[dataset_path, dataset_status])
     with gr.Tab("Train My Voice (Experimental)"):
         gr.Markdown("""## Train a voice model from your own recordings
 
