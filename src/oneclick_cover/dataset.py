@@ -42,11 +42,12 @@ def prepare_recordings(
     root = dataset_root.resolve()
     if target.parent != root:
         raise ValueError("Invalid dataset folder name.")
-    ffmpeg = shutil.which("ffmpeg")
+    ffmpeg = _ffmpeg_path()
     if not ffmpeg:
         raise RuntimeError(
-            "FFmpeg is required to prepare mixed audio formats. Install FFmpeg and add "
-            "ffmpeg.exe to PATH, then restart the app. No recordings were processed."
+            "FFmpeg is unavailable. Re-run install.bat to install the bundled FFmpeg "
+            "helper, or install FFmpeg and add ffmpeg.exe to PATH, then restart the app. "
+            "No recordings were processed."
         )
     valid = []
     for item in files:
