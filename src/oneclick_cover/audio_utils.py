@@ -6,7 +6,7 @@ import numpy as np
 import soundfile as sf
 
 def _ffmpeg_path() -> str | None:
-    system_ffmpeg = _ffmpeg_path()
+    system_ffmpeg = shutil.which("ffmpeg")
     if system_ffmpeg:
         return system_ffmpeg
     try:
