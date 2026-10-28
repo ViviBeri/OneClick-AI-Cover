@@ -19,11 +19,11 @@ The **Train My Voice** tab opens the training interface supplied by the pinned u
 
 ## Launch
 
-1. Run `install.bat` and confirm it finishes without errors.
+1. Run `install.bat` and confirm it finishes without errors. The app uses Python 3.10; the pinned RVC backend uses Python 3.12 and its CPU dependency set for Intel/AMD/CPU systems.
 2. Run `run.bat` and open the local OneClick-AI-Cover interface.
 3. Select **Train My Voice (Experimental)** and click **Open RVC Training UI**.
 4. A separate console should open. Wait for the upstream backend to print its local web address, then open that address in your browser.
-5. Follow the upstream RVC instructions for dataset preparation, preprocessing, F0/feature extraction, training, and index generation.
+5. The RVC page normally opens on a local address (the upstream CPU build defaults to port 7865). Follow the upstream RVC instructions for dataset preparation, preprocessing, F0/feature extraction, training, and index generation. The installer downloads code and dependencies but does not automatically download all pretrained RVC assets; the training UI may require the HuBERT, RMVPE, and pretrained model files described in the upstream README.
 6. Export an inference-ready `.pth` model. Place it in `models/voices/` and use **Refresh models** in the Generate Cover tab.
 
 ## Hardware warning
@@ -33,5 +33,5 @@ Training is substantially more demanding than converting a song. A low-end or CP
 ## Current limitations
 
 - The app converts uploaded recordings into mono WAV files, but it does not automate the full RVC dataset-preprocessing pipeline, select training settings automatically, monitor training progress, or import the finished model automatically.
-- The upstream RVC UI and its model requirements can change. This integration is not yet verified end-to-end on a physical Windows PC.
+- The upstream RVC UI and its model requirements can change. The installer is aligned to the pinned backend's `webui.py` and Python 3.12 CPU requirements, but this integration is not yet verified end-to-end on a physical Windows PC.
 - Training results vary with dataset quality, hardware, and configuration.
