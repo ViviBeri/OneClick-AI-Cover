@@ -21,7 +21,7 @@ set "RVC_COMMIT=81eed5e8f68b6bed1789f682fe78cdd324495afc"
 set "RVC_DIR=%CD%\vendor\rvc"
 if not exist "%UV_EXE%" (
   echo [1/6] Downloading uv runtime manager...
-  powershell -NoProfile -ExecutionPolicy Bypass -Command "$ProgressPreference='SilentlyContinue'; Invoke-WebRequest -Uri 'https://github.com/astral-sh/uv/releases/latest/download/uv-x86_64-pc-windows-msvc.zip' -OutFile '%CD%\.runtime\uv.zip'; Expand-Archive -Force '%CD%\.runtime\uv.zip' '%CD%\.runtime\uv-unpack'; Copy-Item '%CD%\.runtime\uv-unpack\uv.exe' '%UV_EXE%' -Force"
+  powershell -NoProfile -ExecutionPolicy Bypass -Command "$ErrorActionPreference='Stop'; $ProgressPreference='SilentlyContinue'; Invoke-WebRequest -Uri 'https://github.com/astral-sh/uv/releases/latest/download/uv-x86_64-pc-windows-msvc.zip' -OutFile '%CD%\.runtime\uv.zip'; Expand-Archive -Force '%CD%\.runtime\uv.zip' '%CD%\.runtime\uv-unpack'; Copy-Item '%CD%\.runtime\uv-unpack\uv.exe' '%UV_EXE%' -Force"
   if errorlevel 1 goto failed
 )
 echo [2/6] Installing managed Python 3.10 for the main app and Python 3.12 for RVC...
@@ -43,6 +43,11 @@ if not exist "%RVC_DIR%\webui.py" (
 if not exist "%RVC_DIR%\webui.py" (
   echo ERROR: RVC training UI entry point webui.py was not found.
   echo The pinned backend may have changed or downloaded incorrectly.
+  goto failed
+)
+if not exist "%RVC_DIR%\infer\cli.py" (
+  echo ERROR: RVC inference CLI infer\cli.py was not found.
+  echo The pinned backend cannot run singing-cover conversion.
   goto failed
 )
 echo [5/6] Creating the separate RVC Python 3.12 environment...
