@@ -66,7 +66,16 @@ def generate(song, model, pitch, vocal_gain, instrumental_gain, fmt, progress=gr
     except Exception as e:
         logging.exception("Cover generation failed"); raise gr.Error(str(e)) from e
 with gr.Blocks(title="OneClick-AI-Cover") as demo:
-    gr.Markdown("# OneClick-AI-Cover\nFree, local-first AI voice-cover creator. Use only audio and voice models you are authorized to use.")
+    gr.Markdown("""# OneClick-AI-Cover
+**Free • Local-first • No paid API required**
+
+### Quick start
+1. Add an authorized RVC `.pth` model under `models/voices/`, then click **Refresh models**.
+2. Choose your song and voice model.
+3. Click **Generate cover** and wait for separation, conversion, and mixing to finish.
+4. Save the result shown below. If a step fails, copy only sanitized error details when asking for help.
+
+Your files are processed locally by default. This app does not automatically upload recordings to a cloud service. Remote training is a separate, not-yet-automated workflow. Use only voices and audio you have permission to use. Read [legal and ethical use](https://github.com/ViviBeri/OneClick-AI-Cover/blob/main/docs/ETHICS_AND_LEGAL.md) and [community guide](https://github.com/ViviBeri/OneClick-AI-Cover/blob/main/docs/COMMUNITY.md).""")
     with gr.Tabs():
         with gr.Tab("Generate Cover"):
             with gr.Row():
