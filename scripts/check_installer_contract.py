@@ -29,8 +29,8 @@ project = read("pyproject.toml")
 
 # The main application and the pinned upstream RVC backend deliberately use
 # separate Python versions because their dependency constraints differ.
-require('uv python install 3.10' in installer, "installer provisions Python 3.10 for the app")
-require('uv python install 3.12' in installer, "installer provisions Python 3.12 for RVC")
+require('python install 3.10' in installer, "installer provisions Python 3.10 for the app")
+require('python install 3.12' in installer, "installer provisions Python 3.12 for RVC")
 require('RVC_COMMIT=81eed5e8f68b6bed1789f682fe78cdd324495afc' in installer,
         "installer pins the reviewed RVC backend revision")
 require('requirments_cpu_py312.txt' in installer,
