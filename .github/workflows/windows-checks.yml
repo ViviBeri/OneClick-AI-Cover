@@ -29,6 +29,8 @@ jobs:
         run: python -m pytest -q
       - name: Check core dependency imports and launch Gradio headlessly
         run: python scripts/smoke_test_app.py
+      - name: Check Windows installer contract
+        run: python scripts/check_installer_contract.py
       - name: Check required Windows setup files
         shell: pwsh
         run: |
