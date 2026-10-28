@@ -33,7 +33,7 @@ Windows 10/11 x64; 8 GB RAM is a bare starting point, while 16 GB+ is recommende
 
 ## Training your own voice
 
-See [`docs/voice-training.md`](docs/voice-training.md) for local recording preparation and the experimental RVC training UI. If your PC cannot train the model, read [`docs/remote-training.md`](docs/remote-training.md) for the **free-only, Kaggle-first** plan. No paid GPU provider or paid API is required by the project; free GPU availability is limited, and a tested remote-training notebook is still under development.
+See [`docs/voice-training.md`](docs/voice-training.md) for local recording preparation and the experimental RVC training UI. If your PC cannot train the model, read [`docs/remote-training.md`](docs/remote-training.md) for the **free-only, Kaggle-first** plan and try the [Kaggle RVC preflight notebook](notebooks/kaggle_rvc_training_preflight.ipynb). The notebook checks the environment and pinned backend revision; it is **not yet a complete training pipeline** and does not expose a public UI. No paid GPU provider or paid API is required by the project; free GPU availability is limited.
 
 ## Legal, ethical use, and community
 
@@ -58,7 +58,8 @@ No voice models or copyrighted songs are bundled. Third-party dependencies and m
 - [x] Improve the default conversion path when no optional RVC index is installed
 - [x] Add managed FFmpeg fallback for audio import and MP3 export
 - [x] Add legal/ethical boundaries and community issue guidance
-- [ ] Build and verify a free Kaggle training notebook with checkpoint export
+- [x] Add a guarded Kaggle GPU/backend preflight notebook
+- [ ] Build and verify private Kaggle training, checkpoint export, and model download
 - [ ] Profile CPU/GPU and memory behavior
 - [x] Add an experimental launcher for the upstream RVC training UI
 - [ ] Automate dataset preparation and guided training workflow
