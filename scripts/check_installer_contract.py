@@ -38,6 +38,8 @@ require('requirments_cpu_py312.txt' in installer,
 require('webui.py' in installer, "installer verifies the RVC UI entry point")
 require('infer\\cli.py' in installer, "installer verifies the RVC inference CLI entry point")
 require("$ErrorActionPreference='Stop'" in installer, "installer makes PowerShell download errors fatal")
+require(installer.count("$ErrorActionPreference='Stop'") >= 2,
+        "both runtime-manager and RVC downloads stop on PowerShell errors")
 require('if errorlevel 1 goto failed' in installer.lower(),
         "installer has explicit failure handling after setup commands")
 require(':failed' in installer.lower(), "installer has a failure exit path")
