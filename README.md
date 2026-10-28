@@ -2,7 +2,7 @@
 
 Free, open-source, Windows-first local AI singing-cover creator. Separate vocals from a song, convert the vocal with a compatible RVC voice model, remix it with the instrumental, and export audio locally.
 
-> **Status: early integration build.** The interface, Demucs separation, audio mixing/export, and RVC CLI adapter are scaffolded. The automatic Windows setup and full end-to-end conversion still need testing on a clean Windows machine.
+> **Status: early integration build.** The interface, Demucs separation, audio mixing/export, and RVC CLI adapter are scaffolded. The Windows CI workflow now tests imports and Gradio startup, but the automatic installer and full end-to-end conversion still need testing on a clean Windows machine.
 
 ## Setup without manually installing Python
 
@@ -26,6 +26,10 @@ Setup downloads several large packages and may take a long time. You need a stab
 - Experimental **Train My Voice** tab that launches the upstream RVC training UI
 - In-app **Import Voice Model** tab to copy an inference-ready `.pth` file into the local voice-model folder
 - **Prepare Voice Recordings** tab to convert multiple recordings to mono WAVs for the RVC training dataset
+
+## Verification status
+
+The Windows CI workflow tests Python 3.10 and 3.11, compiles sources, runs unit tests, checks core dependency imports, and launches the Gradio interface locally to verify its HTTP response. This is useful smoke coverage but **does not certify the installer on a fresh Windows machine or prove end-to-end conversion**. See [the verification plan and results template](docs/verification.md) before reporting success. No clean-machine result or complete end-to-end run is recorded yet.
 
 ## Hardware expectations
 
@@ -59,6 +63,7 @@ No voice models or copyrighted songs are bundled. Third-party dependencies and m
 - [x] Add managed FFmpeg fallback for audio import and MP3 export
 - [x] Add legal/ethical boundaries and community issue guidance
 - [x] Add a guarded Kaggle GPU/backend preflight notebook
+- [x] Add Windows CI checks for core imports and local Gradio startup
 - [ ] Build and verify private Kaggle training, checkpoint export, and model download
 - [ ] Profile CPU/GPU and memory behavior
 - [x] Add an experimental launcher for the upstream RVC training UI
