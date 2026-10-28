@@ -11,7 +11,7 @@
 Demucs downloads model weights on first use. CPU-only separation can take a long time and use substantial RAM.
 
 ## RVC backend or model error
-- Confirm the setup completed and `vendor/rvc/infer/cli.py` exists.
+- Confirm the setup completed and `vendor/rvc/webui.py` exists. The pinned RVC backend uses Python 3.12 and `requirments_cpu_py312.txt` for CPU/Intel/AMD systems.
 - Use an RVC model compatible with the pinned backend.
 - Some models need a matching index file and additional HuBERT/RMVPE assets.
 - Do not use models without permission.
