@@ -10,7 +10,7 @@ SUPPORTED_AUDIO = {".wav", ".mp3", ".flac", ".m4a", ".ogg", ".aac"}
 
 
 def _ffmpeg_path() -> str | None:
-    system_ffmpeg = _ffmpeg_path()
+    system_ffmpeg = shutil.which("ffmpeg")
     if system_ffmpeg:
         return system_ffmpeg
     try:
