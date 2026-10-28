@@ -46,3 +46,32 @@ def test_ffmpeg_path_uses_bundled_helper(monkeypatch):
     monkeypatch.setattr(dataset.shutil, "which", lambda _: None)
     monkeypatch.setitem(sys.modules, "imageio_ffmpeg", SimpleNamespace(get_ffmpeg_exe=lambda: "/managed/ffmpeg.exe"))
     assert dataset._ffmpeg_path() == "/managed/ffmpeg.exe"
+
+
+
+def test_reusing_dataset_name_removes_stale_generated_recordings(monkeypatch, tmp_path):
+    from types import SimpleNamespace
+    from oneclick_cover import dataset
+
+    source = tmp_path / "voice.wav"
+    source.write_bytes(b"input")
+    target = tmp_path / "datasets" / "MyVoice"
+    target.mkdir(parents=True)
+    stale = target / "recording_009.wav"
+    stale.write_bytes(b"stale")
+    user_file = target / "notes.txt"
+    user_file.write_text("keep", encoding="utf-8")
+
+    monkeypatch.setattr(dataset, "_ffmpeg_path", lambda: "/tools/ffmpeg.exe")
+
+    def fake_run(command, **kwargs):
+        Path(command[-1]).write_bytes(b"converted wav")
+        return SimpleNamespace(returncode=0, stderr="", stdout="")
+
+    monkeypatch.setattr(dataset.subprocess, "run", fake_run)
+    result_dir, count = prepare_recordings([source], "MyVoice", tmp_path / "datasets")
+
+    assert result_dir == target
+    assert count == 1
+    assert sorted(p.name for p in target.glob("recording_*.wav")) == ["recording_001.wav"]
+    assert user_file.read_text(encoding="utf-8") == "keep"
