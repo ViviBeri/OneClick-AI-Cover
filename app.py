@@ -8,6 +8,7 @@ from oneclick_cover.settings import VOICE_DIR, OUTPUT_DIR, LOG_DIR
 from oneclick_cover.validation import validate_audio_file, validate_voice_model
 from oneclick_cover.separation import separate_vocals
 from oneclick_cover.conversion import convert_voice
+from oneclick_cover.training import launch_training_ui
 for folder in (VOICE_DIR, OUTPUT_DIR, LOG_DIR): folder.mkdir(parents=True, exist_ok=True)
 logging.basicConfig(filename=LOG_DIR / "oneclick-cover.log", level=logging.INFO)
 def models(): return sorted(p.name for p in VOICE_DIR.glob("*.pth") if p.is_file())
@@ -45,5 +46,19 @@ with gr.Blocks(title="OneClick-AI-Cover") as demo:
     fmt=gr.Radio(["WAV","MP3"],value="WAV",label="Export format")
     go=gr.Button("Generate cover",variant="primary"); audio=gr.Audio(type="filepath"); status=gr.Textbox()
     go.click(generate,inputs=[song,model,pitch,vocal_gain,instrumental_gain,fmt],outputs=[audio,status])
-    gr.Markdown("Setup: double-click install.bat, then run.bat. Model training is not implemented in this starter build.")
+    with gr.Tab("Train My Voice (Experimental)"):
+        gr.Markdown("""## Train a voice model from your own recordings
+
+This opens the upstream RVC training interface locally. It is an advanced workflow, not yet a one-click trainer.
+
+1. Prepare clean recordings of the voice you have permission to train (typically at least 10–30 minutes; more clean material may help).
+2. Avoid music, reverb, background voices, clipping, and long silences.
+3. Click **Open RVC Training UI** and follow its dataset, preprocessing, feature extraction, training, and index steps.
+4. Export the resulting inference model and place the .pth file in models/voices/, then return to Generate Cover and refresh models.
+
+**Hardware warning:** Training is much more demanding than inference. A low-end CPU-only PC may take many hours or days and can run out of RAM. An NVIDIA GPU is strongly recommended. Do not train on another person's voice without consent.
+""")
+        launch_train = gr.Button("Open RVC Training UI", variant="primary")
+        train_status = gr.Textbox(label="Training UI status", interactive=False)
+        launch_train.click(fn=launch_training_ui, inputs=[], outputs=[train_status])
 if __name__=="__main__": demo.launch(server_name="127.0.0.1",server_port=7860,inbrowser=True,show_error=True)
