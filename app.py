@@ -1,5 +1,5 @@
 from __future__ import annotations
-import logging, sys, tempfile
+import logging, sys, tempfile, shutil
 from pathlib import Path
 import gradio as gr
 sys.path.insert(0, str(Path(__file__).resolve().parent / "src"))
@@ -15,6 +15,25 @@ def models(): return sorted(p.name for p in VOICE_DIR.glob("*.pth") if p.is_file
 def refresh_models():
     choices = models()
     return gr.update(choices=choices, value=(choices[0] if choices else None))
+def import_voice_model(uploaded_file):
+    if not uploaded_file:
+        raise gr.Error("Choose a .pth voice model file first.")
+    source = Path(uploaded_file)
+    if source.suffix.lower() != ".pth":
+        raise gr.Error("Only .pth RVC inference models are accepted.")
+    safe_name = source.name.replace("/", "_").replace("\\", "_")
+    destination = (VOICE_DIR / safe_name).resolve()
+    if destination.parent != VOICE_DIR.resolve():
+        raise gr.Error("Invalid model filename.")
+    try:
+        validate_voice_model(source)
+        if source.resolve() != destination:
+            shutil.copy2(source, destination)
+        choices = models()
+        return gr.update(choices=choices, value=destination.name), f"Imported {destination.name}. You can now select it under Generate Cover."
+    except Exception as exc:
+        logging.exception("Voice model import failed")
+        raise gr.Error(str(exc)) from exc
 def generate(song, model, pitch, vocal_gain, instrumental_gain, fmt, progress=gr.Progress()):
     if not song: raise gr.Error("Choose an input song first.")
     if not model: raise gr.Error("Add an authorized .pth model to models/voices, then refresh.")
@@ -46,6 +65,12 @@ with gr.Blocks(title="OneClick-AI-Cover") as demo:
     fmt=gr.Radio(["WAV","MP3"],value="WAV",label="Export format")
     go=gr.Button("Generate cover",variant="primary"); audio=gr.Audio(type="filepath"); status=gr.Textbox()
     go.click(generate,inputs=[song,model,pitch,vocal_gain,instrumental_gain,fmt],outputs=[audio,status])
+    with gr.Tab("Import Voice Model"):
+        gr.Markdown("## Import a trained RVC model\nUpload an inference-ready .pth file you created or are authorized to use. Large files may take time to upload. The model is copied into this app's local models/voices folder.")
+        model_upload = gr.File(label="RVC model (.pth)", file_types=[".pth"], type="filepath")
+        import_button = gr.Button("Import model", variant="primary")
+        import_status = gr.Textbox(label="Import status", interactive=False)
+        import_button.click(fn=import_voice_model, inputs=[model_upload], outputs=[model, import_status])
     with gr.Tab("Train My Voice (Experimental)"):
         gr.Markdown("""## Train a voice model from your own recordings
 
