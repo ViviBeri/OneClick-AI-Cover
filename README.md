@@ -35,9 +35,11 @@ Windows 10/11 x64; 8 GB RAM is a bare starting point, while 16 GB+ is recommende
 
 See [`docs/voice-training.md`](docs/voice-training.md) for local recording preparation and the experimental RVC training UI. If your PC cannot train the model, read [`docs/remote-training.md`](docs/remote-training.md) for the **free-only, Kaggle-first** plan. No paid GPU provider or paid API is required by the project; free GPU availability is limited, and a tested remote-training notebook is still under development.
 
-## Models and rights
+## Legal, ethical use, and community
 
-No voice models or copyrighted songs are bundled. Add only voice models you have permission to use and respect the rights of the original audio. Third-party dependencies and model weights have separate license terms; see `docs/THIRD_PARTY.md`.
+Use only voices and audio you own or have permission to use. Do not impersonate people deceptively or create abusive/non-consensual audio. Clearly disclose synthetic audio when listeners could mistake it for a real performance or statement. Local processing does not remove copyright or consent obligations. Read [Legal and ethical use](docs/ETHICS_AND_LEGAL.md) and [Community and contribution guide](docs/COMMUNITY.md) before sharing outputs or opening issues.
+
+No voice models or copyrighted songs are bundled. Third-party dependencies and model weights have separate license terms; see `docs/THIRD_PARTY.md`. The MIT license covers original project code only.
 
 ## Troubleshooting
 
@@ -53,6 +55,10 @@ No voice models or copyrighted songs are bundled. Add only voice models you have
 - [x] RVC CLI integration adapter
 - [ ] Verify Windows installer on a clean machine
 - [ ] Verify end-to-end conversion with authorized audio/model
+- [x] Improve the default conversion path when no optional RVC index is installed
+- [x] Add managed FFmpeg fallback for audio import and MP3 export
+- [x] Add legal/ethical boundaries and community issue guidance
+- [ ] Build and verify a free Kaggle training notebook with checkpoint export
 - [ ] Profile CPU/GPU and memory behavior
 - [x] Add an experimental launcher for the upstream RVC training UI
 - [ ] Automate dataset preparation and guided training workflow
