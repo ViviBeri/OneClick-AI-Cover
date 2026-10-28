@@ -15,13 +15,13 @@ def launch_training_ui() -> str:
             "Start the upstream RVC WebUI manually from the backend folder."
         )
 
-    entrypoint = RVC_ROOT / "infer-web.py"
+    entrypoint = RVC_ROOT / "webui.py"
     python = RVC_ROOT / ".venv" / "Scripts" / "python.exe"
 
     if not entrypoint.is_file():
         raise RuntimeError(
             "The RVC WebUI entry point was not found. Run install.bat again "
-            "and confirm the downloaded backend contains infer-web.py."
+            "and confirm the downloaded backend contains webui.py."
         )
     if not python.is_file():
         raise RuntimeError(
