@@ -9,6 +9,14 @@ The **Train My Voice** tab opens the training interface supplied by the pinned u
 - Ten to thirty minutes of clean recordings is a practical starting point, not a guarantee of quality.
 - Keep original recordings private and do not commit them to GitHub.
 
+## Prepare recordings in OneClick-AI-Cover
+
+1. Open the **Prepare Voice Recordings** tab.
+2. Enter a dataset name such as `MyVoice` and select multiple recordings of your own voice.
+3. Click **Prepare recordings**. The app converts files to mono 44.1 kHz WAV and displays the resulting local folder path.
+4. Copy that path into the dataset/training-folder field in the RVC training interface. The app does not start training automatically.
+5. The preparation step requires FFmpeg installed and available on PATH. Keep the dataset private; the project `.gitignore` excludes the `datasets/` folder.
+
 ## Launch
 
 1. Run `install.bat` and confirm it finishes without errors.
