@@ -5,6 +5,16 @@ from pathlib import Path
 import numpy as np
 import soundfile as sf
 
+def _ffmpeg_path() -> str | None:
+    system_ffmpeg = _ffmpeg_path()
+    if system_ffmpeg:
+        return system_ffmpeg
+    try:
+        import imageio_ffmpeg
+        return imageio_ffmpeg.get_ffmpeg_exe()
+    except Exception:
+        return None
+
 def _run(command: list[str]) -> None:
     result = subprocess.run(command, capture_output=True, text=True, check=False)
     if result.returncode:
@@ -20,7 +30,7 @@ def transcode_to_wav(source: Path, destination: Path) -> None:
         audio, sr = sf.read(str(source), dtype="float32", always_2d=True)
         sf.write(str(destination), audio, sr)
     except Exception as exc:
-        raise RuntimeError("Could not decode this file. Install FFmpeg and ensure ffmpeg.exe is on PATH.") from exc
+        raise RuntimeError("Could not decode this file. Re-run install.bat so the managed FFmpeg package is installed.") from exc
 
 def probe_audio(path: Path) -> dict:
     info = sf.info(str(path)) if path.suffix.lower() in {".wav", ".flac"} else None
