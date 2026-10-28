@@ -36,7 +36,7 @@ require('RVC_COMMIT=81eed5e8f68b6bed1789f682fe78cdd324495afc' in installer,
 require('requirments_cpu_py312.txt' in installer,
         "installer checks for the pinned backend CPU requirements file")
 require('webui.py' in installer, "installer verifies the RVC UI entry point")
-require('infer\\\\cli.py' in installer, "installer verifies the RVC inference CLI entry point")
+require('infer\\cli.py' in installer, "installer verifies the RVC inference CLI entry point")
 require("$ErrorActionPreference='Stop'" in installer, "installer makes PowerShell download errors fatal")
 require('if errorlevel 1 goto failed' in installer.lower(),
         "installer has explicit failure handling after setup commands")
