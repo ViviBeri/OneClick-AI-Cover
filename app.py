@@ -11,11 +11,16 @@ from oneclick_cover.conversion import convert_voice
 for folder in (VOICE_DIR, OUTPUT_DIR, LOG_DIR): folder.mkdir(parents=True, exist_ok=True)
 logging.basicConfig(filename=LOG_DIR / "oneclick-cover.log", level=logging.INFO)
 def models(): return sorted(p.name for p in VOICE_DIR.glob("*.pth") if p.is_file())
+def refresh_models():
+    choices = models()
+    return gr.update(choices=choices, value=(choices[0] if choices else None))
 def generate(song, model, pitch, vocal_gain, instrumental_gain, fmt, progress=gr.Progress()):
     if not song: raise gr.Error("Choose an input song first.")
     if not model: raise gr.Error("Add an authorized .pth model to models/voices, then refresh.")
     try:
-        source=Path(song); validate_audio_file(source); model_path=(VOICE_DIR/model).resolve(); validate_voice_model(model_path)
+        source=Path(song); validate_audio_file(source); model_path=(VOICE_DIR/model).resolve()
+        if model_path.parent != VOICE_DIR.resolve(): raise ValueError("Invalid voice-model selection.")
+        validate_voice_model(model_path)
         job=Path(tempfile.mkdtemp(prefix="cover_",dir=OUTPUT_DIR)); wav=job/"input.wav"
         progress(0.1,desc="Preparing audio"); transcode_to_wav(source,wav)
         progress(0.25,desc="Separating vocals"); vocals,instrumental=separate_vocals(wav,job)
@@ -33,7 +38,7 @@ with gr.Blocks(title="OneClick-AI-Cover") as demo:
     with gr.Row():
         song=gr.File(label="Song (MP3/WAV/FLAC)",file_types=[".mp3",".wav",".flac"],type="filepath")
         model=gr.Dropdown(label="RVC voice model (.pth)",choices=models())
-    refresh=gr.Button("Refresh models"); refresh.click(lambda: gr.Dropdown(choices=models(),value=(models() or [None])[0]),outputs=model)
+    refresh=gr.Button("Refresh models"); refresh.click(refresh_models, inputs=[], outputs=model)
     pitch=gr.Slider(-12,12,value=0,step=1,label="Pitch shift")
     vocal_gain=gr.Slider(0.2,2,value=1,step=0.05,label="Vocal gain")
     instrumental_gain=gr.Slider(0.2,2,value=0.85,step=0.05,label="Instrumental gain")
