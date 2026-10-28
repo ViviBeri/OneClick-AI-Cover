@@ -1,0 +1,19 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+.pytest_cache/
+.runtime/
+.cache/
+vendor/rvc/
+models/voices/*
+!models/voices/.gitkeep
+outputs/*
+!outputs/.gitkeep
+logs/*
+!logs/.gitkeep
+tmp/
+*.wav
+*.mp3
+*.flac
