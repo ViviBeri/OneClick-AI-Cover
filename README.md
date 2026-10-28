@@ -25,6 +25,7 @@ Setup downloads several large packages and may take a long time. You need a stab
 - Local logs and output folders
 - Experimental **Train My Voice** tab that launches the upstream RVC training UI
 - In-app **Import Voice Model** tab to copy an inference-ready `.pth` file into the local voice-model folder
+- **Prepare Voice Recordings** tab to convert multiple recordings to mono WAVs for the RVC training dataset
 
 ## Hardware expectations
 
