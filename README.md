@@ -23,10 +23,11 @@ Setup downloads several large packages and may take a long time. You need a stab
 - Mixing converted vocals with the original instrumental
 - WAV output and optional MP3 export through FFmpeg
 - Local logs and output folders
+- Experimental **Train My Voice** tab that launches the upstream RVC training UI
 
 ## Hardware expectations
 
-Windows 10/11 x64; 8 GB RAM is a bare starting point, while 16 GB+ is recommended. An NVIDIA GPU is strongly recommended for usable inference speed. Low-end CPUs may be extremely slow or run out of memory. Voice-model training is not implemented yet.
+Windows 10/11 x64; 8 GB RAM is a bare starting point, while 16 GB+ is recommended. An NVIDIA GPU is strongly recommended for usable inference speed. Low-end CPUs may be extremely slow or run out of memory. Voice training is available only through the upstream RVC training interface launched from the experimental tab; the dataset preparation and training stages are not yet automated by this app.
 
 ## Models and rights
 
@@ -47,7 +48,8 @@ No voice models or copyrighted songs are bundled. Add only voice models you have
 - [ ] Verify Windows installer on a clean machine
 - [ ] Verify end-to-end conversion with authorized audio/model
 - [ ] Profile CPU/GPU and memory behavior
-- [ ] Add model-training workflow after inference is stable
+- [x] Add an experimental launcher for the upstream RVC training UI
+- [ ] Automate dataset preparation and guided training workflow
 - [ ] Package a reproducible Windows release
 
 MIT license for original project code; see `LICENSE`.
