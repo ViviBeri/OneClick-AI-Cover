@@ -21,3 +21,18 @@ def test_preparation_rejects_missing_recording_before_conversion(monkeypatch, tm
     monkeypatch.setattr("oneclick_cover.dataset.shutil.which", lambda _: "ffmpeg")
     with pytest.raises(ValueError, match="Recording not found"):
         prepare_recordings([tmp_path / "missing.wav"], "MyVoice", tmp_path / "datasets")
+
+
+def test_ffmpeg_path_uses_system_ffmpeg(monkeypatch):
+    from oneclick_cover import dataset
+
+    monkeypatch.setattr(dataset.shutil, "which", lambda name: "/tools/ffmpeg.exe" if name == "ffmpeg" else None)
+    assert dataset._ffmpeg_path() == "/tools/ffmpeg.exe"
+
+
+def test_preparation_reports_missing_ffmpeg(monkeypatch, tmp_path):
+    from oneclick_cover import dataset
+
+    monkeypatch.setattr(dataset, "_ffmpeg_path", lambda: None)
+    with pytest.raises(RuntimeError, match="FFmpeg is unavailable"):
+        prepare_recordings([tmp_path / "voice.wav"], "MyVoice", tmp_path / "datasets")
