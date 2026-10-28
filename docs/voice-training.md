@@ -32,6 +32,6 @@ Training is substantially more demanding than converting a song. A low-end or CP
 
 ## Current limitations
 
-- The app does not yet prepare datasets, select training settings automatically, monitor training progress, or import the finished model automatically.
+- The app converts uploaded recordings into mono WAV files, but it does not automate the full RVC dataset-preprocessing pipeline, select training settings automatically, monitor training progress, or import the finished model automatically.
 - The upstream RVC UI and its model requirements can change. This integration is not yet verified end-to-end on a physical Windows PC.
 - Training results vary with dataset quality, hardware, and configuration.
