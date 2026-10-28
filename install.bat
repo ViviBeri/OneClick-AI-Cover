@@ -24,36 +24,38 @@ if not exist "%UV_EXE%" (
   powershell -NoProfile -ExecutionPolicy Bypass -Command "$ProgressPreference='SilentlyContinue'; Invoke-WebRequest -Uri 'https://github.com/astral-sh/uv/releases/latest/download/uv-x86_64-pc-windows-msvc.zip' -OutFile '%CD%\.runtime\uv.zip'; Expand-Archive -Force '%CD%\.runtime\uv.zip' '%CD%\.runtime\uv-unpack'; Copy-Item '%CD%\.runtime\uv-unpack\uv.exe' '%UV_EXE%' -Force"
   if errorlevel 1 goto failed
 )
-echo [2/6] Installing managed Python 3.10...
+echo [2/6] Installing managed Python 3.10 for the main app and Python 3.12 for RVC...
 "%UV_EXE%" python install 3.10
+if errorlevel 1 goto failed
+"%UV_EXE%" python install 3.12
 if errorlevel 1 goto failed
 echo [3/6] Creating the app environment...
 if not exist ".venv\Scripts\python.exe" "%UV_EXE%" venv --python 3.10 .venv
 if errorlevel 1 goto failed
 "%UV_EXE%" pip install --python ".venv\Scripts\python.exe" -e .
 if errorlevel 1 goto failed
-if not exist "%RVC_DIR%\infer\cli.py" (
+if not exist "%RVC_DIR%\webui.py" (
   echo [4/6] Downloading pinned RVC inference backend...
   if exist "%RVC_DIR%" rmdir /s /q "%RVC_DIR%"
   powershell -NoProfile -ExecutionPolicy Bypass -Command "$ProgressPreference='SilentlyContinue'; Invoke-WebRequest -Uri 'https://github.com/RVC-Project/Retrieval-based-Voice-Conversion-WebUI/archive/%RVC_COMMIT%.zip' -OutFile '%CD%\.runtime\rvc.zip'; Expand-Archive -Force '%CD%\.runtime\rvc.zip' '%CD%\.runtime\rvc-unpack'; $src=Get-ChildItem '%CD%\.runtime\rvc-unpack' -Directory | Select-Object -First 1; Move-Item $src.FullName '%RVC_DIR%'"
   if errorlevel 1 goto failed
 )
-if not exist "%RVC_DIR%\\infer-web.py" (
-  echo ERROR: RVC training UI entry point infer-web.py was not found.
+if not exist "%RVC_DIR%\webui.py" (
+  echo ERROR: RVC training UI entry point webui.py was not found.
   echo The pinned backend may have changed or downloaded incorrectly.
   goto failed
 )
-echo [5/6] Creating the separate RVC environment...
-if not exist "%RVC_DIR%\.venv\Scripts\python.exe" "%UV_EXE%" venv --python 3.10 "%RVC_DIR%\.venv"
+echo [5/6] Creating the separate RVC Python 3.12 environment...
+if not exist "%RVC_DIR%\.venv\Scripts\python.exe" "%UV_EXE%" venv --python 3.12 "%RVC_DIR%\.venv"
 if errorlevel 1 goto failed
-if not exist "%RVC_DIR%\.runtime-ready" (
-  if not exist "%RVC_DIR%\requirements.txt" (
-    echo ERROR: RVC requirements.txt was not found in the downloaded backend.
+if not exist "%RVC_DIR%\.runtime-ready-py312" (
+  if not exist "%RVC_DIR%\requirments_cpu_py312.txt" (
+    echo ERROR: RVC CPU requirements file was not found in the downloaded backend.
     goto failed
   )
-  "%UV_EXE%" pip install --python "%RVC_DIR%\.venv\Scripts\python.exe" -r "%RVC_DIR%\requirements.txt"
+  "%UV_EXE%" pip install --python "%RVC_DIR%\.venv\Scripts\python.exe" -r "%RVC_DIR%\requirments_cpu_py312.txt"
   if errorlevel 1 goto failed
-  echo ready>"%RVC_DIR%\.runtime-ready"
+  echo ready>"%RVC_DIR%\.runtime-ready-py312"
 )
 echo [6/6] Checking app imports...
 ".venv\Scripts\python.exe" -c "import gradio, demucs, soundfile; print('UI and separation dependencies are available.')"
