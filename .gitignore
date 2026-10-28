@@ -17,3 +17,8 @@ tmp/
 *.wav
 *.mp3
 *.flac
+
+datasets/
+*.m4a
+*.ogg
+*.aac
