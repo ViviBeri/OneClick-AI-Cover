@@ -38,6 +38,11 @@ if not exist "%RVC_DIR%\infer\cli.py" (
   powershell -NoProfile -ExecutionPolicy Bypass -Command "$ProgressPreference='SilentlyContinue'; Invoke-WebRequest -Uri 'https://github.com/RVC-Project/Retrieval-based-Voice-Conversion-WebUI/archive/%RVC_COMMIT%.zip' -OutFile '%CD%\.runtime\rvc.zip'; Expand-Archive -Force '%CD%\.runtime\rvc.zip' '%CD%\.runtime\rvc-unpack'; $src=Get-ChildItem '%CD%\.runtime\rvc-unpack' -Directory | Select-Object -First 1; Move-Item $src.FullName '%RVC_DIR%'"
   if errorlevel 1 goto failed
 )
+if not exist "%RVC_DIR%\\infer-web.py" (
+  echo ERROR: RVC training UI entry point infer-web.py was not found.
+  echo The pinned backend may have changed or downloaded incorrectly.
+  goto failed
+)
 echo [5/6] Creating the separate RVC environment...
 if not exist "%RVC_DIR%\.venv\Scripts\python.exe" "%UV_EXE%" venv --python 3.10 "%RVC_DIR%\.venv"
 if errorlevel 1 goto failed
