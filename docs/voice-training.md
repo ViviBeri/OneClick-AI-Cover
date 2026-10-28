@@ -15,7 +15,7 @@ The **Train My Voice** tab opens the training interface supplied by the pinned u
 2. Enter a dataset name such as `MyVoice` and select multiple recordings of your own voice.
 3. Click **Prepare recordings**. The app converts files to mono 44.1 kHz WAV and displays the resulting local folder path.
 4. Copy that path into the dataset/training-folder field in the RVC training interface. The app does not start training automatically.
-5. The preparation step requires FFmpeg installed and available on PATH. Keep the dataset private; the project `.gitignore` excludes the `datasets/` folder.
+5. The app now uses the managed `imageio-ffmpeg` binary when a system FFmpeg is not available, so you should not need to install FFmpeg separately. Keep the dataset private; the project `.gitignore` excludes the `datasets/` folder.
 
 ## Launch
 
