@@ -24,6 +24,7 @@ Setup downloads several large packages and may take a long time. You need a stab
 - WAV output and optional MP3 export through FFmpeg
 - Local logs and output folders
 - Experimental **Train My Voice** tab that launches the upstream RVC training UI
+- In-app **Import Voice Model** tab to copy an inference-ready `.pth` file into the local voice-model folder
 
 ## Hardware expectations
 
