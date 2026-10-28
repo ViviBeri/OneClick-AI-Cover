@@ -33,3 +33,76 @@ def test_conversion_disables_index_when_no_index_picker_exists(monkeypatch, tmp_
     assert command[index_rate + 1] == "0"
     assert command[command.index("--pitch") + 1] == "2"
     assert output.read_bytes() == b"converted"
+
+
+
+def test_conversion_reports_missing_backend_cli(monkeypatch, tmp_path):
+    monkeypatch.setattr(conversion, "RVC_ROOT", tmp_path / "missing-rvc")
+    try:
+        conversion.convert_voice(
+            tmp_path / "vocal.wav",
+            tmp_path / "converted.wav",
+            tmp_path / "voice.pth",
+        )
+    except RuntimeError as exc:
+        assert "RVC backend is missing" in str(exc)
+    else:
+        raise AssertionError("Expected a clear error when the RVC CLI is missing")
+
+
+def test_conversion_includes_backend_diagnostics_on_failure(monkeypatch, tmp_path):
+    backend = tmp_path / "rvc"
+    (backend / "infer").mkdir(parents=True)
+    (backend / "infer" / "cli.py").write_text("# test stub", encoding="utf-8")
+    python = backend / ".venv" / "Scripts" / "python.exe"
+    python.parent.mkdir(parents=True)
+    python.write_text("", encoding="utf-8")
+    model = tmp_path / "voice.pth"
+    model.write_bytes(b"model")
+    source = tmp_path / "vocal.wav"
+    source.write_bytes(b"audio")
+
+    def fake_run(command, **kwargs):
+        return SimpleNamespace(
+            returncode=2,
+            stderr="RuntimeError: test backend diagnostic",
+            stdout="",
+        )
+
+    monkeypatch.setattr(conversion, "RVC_ROOT", backend)
+    monkeypatch.setattr(conversion.subprocess, "run", fake_run)
+
+    try:
+        conversion.convert_voice(source, tmp_path / "converted.wav", model)
+    except RuntimeError as exc:
+        assert "RVC voice conversion failed" in str(exc)
+        assert "test backend diagnostic" in str(exc)
+    else:
+        raise AssertionError("Expected conversion failure to surface backend diagnostics")
+
+
+def test_conversion_rejects_success_without_output(monkeypatch, tmp_path):
+    backend = tmp_path / "rvc"
+    (backend / "infer").mkdir(parents=True)
+    (backend / "infer" / "cli.py").write_text("# test stub", encoding="utf-8")
+    python = backend / ".venv" / "Scripts" / "python.exe"
+    python.parent.mkdir(parents=True)
+    python.write_text("", encoding="utf-8")
+    model = tmp_path / "voice.pth"
+    model.write_bytes(b"model")
+    source = tmp_path / "vocal.wav"
+    source.write_bytes(b"audio")
+
+    monkeypatch.setattr(conversion, "RVC_ROOT", backend)
+    monkeypatch.setattr(
+        conversion.subprocess,
+        "run",
+        lambda command, **kwargs: SimpleNamespace(returncode=0, stderr="", stdout=""),
+    )
+
+    try:
+        conversion.convert_voice(source, tmp_path / "converted.wav", model)
+    except RuntimeError as exc:
+        assert "did not create the converted vocal file" in str(exc)
+    else:
+        raise AssertionError("Expected a clear error when the output file is absent")
