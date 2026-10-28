@@ -9,6 +9,17 @@ from typing import Iterable
 SUPPORTED_AUDIO = {".wav", ".mp3", ".flac", ".m4a", ".ogg", ".aac"}
 
 
+def _ffmpeg_path() -> str | None:
+    system_ffmpeg = _ffmpeg_path()
+    if system_ffmpeg:
+        return system_ffmpeg
+    try:
+        import imageio_ffmpeg
+        return imageio_ffmpeg.get_ffmpeg_exe()
+    except Exception:
+        return None
+
+
 def safe_dataset_name(name: str) -> str:
     """Return a portable folder name without path traversal or unsafe characters."""
     cleaned = re.sub(r"[^A-Za-z0-9_-]+", "_", name.strip()).strip("_")
