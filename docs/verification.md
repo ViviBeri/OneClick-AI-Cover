@@ -15,7 +15,8 @@ The workflow tests Python 3.10 and 3.11 on Windows and runs:
 3. Run the unit tests.
 4. Import Gradio, Demucs, NumPy, SoundFile, and imageio-ffmpeg.
 5. Start `app.py` as a subprocess, request `http://127.0.0.1:7860/`, check HTTP 200 and the app title, then stop the process.
-6. Check that the Windows setup files and this guide exist.
+6. Run `python scripts/check_installer_contract.py` to check that the installer and launcher still agree on the managed Python versions, pinned RVC revision, required RVC entry points, and explicit failure paths. This is a static check and does not run the installer.
+7. Check that the Windows setup files and this guide exist.
 
 Review the [Windows Checks workflow](../.github/workflows/windows-checks.yml) and the latest [GitHub Actions runs](https://github.com/ViviBeri/OneClick-AI-Cover/actions).
 
