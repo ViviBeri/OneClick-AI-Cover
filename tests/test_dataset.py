@@ -36,3 +36,13 @@ def test_preparation_reports_missing_ffmpeg(monkeypatch, tmp_path):
     monkeypatch.setattr(dataset, "_ffmpeg_path", lambda: None)
     with pytest.raises(RuntimeError, match="FFmpeg is unavailable"):
         prepare_recordings([tmp_path / "voice.wav"], "MyVoice", tmp_path / "datasets")
+
+
+def test_ffmpeg_path_uses_bundled_helper(monkeypatch):
+    import sys
+    from types import SimpleNamespace
+    from oneclick_cover import dataset
+
+    monkeypatch.setattr(dataset.shutil, "which", lambda _: None)
+    monkeypatch.setitem(sys.modules, "imageio_ffmpeg", SimpleNamespace(get_ffmpeg_exe=lambda: "/managed/ffmpeg.exe"))
+    assert dataset._ffmpeg_path() == "/managed/ffmpeg.exe"
