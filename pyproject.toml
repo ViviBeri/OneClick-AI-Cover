@@ -1,0 +1,22 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "oneclick-ai-cover"
+version = "0.1.0"
+description = "Local-first Windows AI voice-cover automation scaffold"
+requires-python = ">=3.10,<3.12"
+dependencies = [
+  "gradio>=4.44,<6",
+  "demucs==4.0.1",
+  "numpy>=1.24,<2.0",
+  "soundfile>=0.12.1",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]
