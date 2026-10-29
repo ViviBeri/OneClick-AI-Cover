@@ -26,9 +26,9 @@ Review the [Windows Checks workflow](../.github/workflows/windows-checks.yml) an
 
 ### Section 1 — Test environment and prerequisites
 
-Use a fresh Windows 10/11 x64 virtual machine or physical machine with no Python installed. A fresh VM counts; testers do not need spare physical hardware. Record Windows edition/version/build, CPU architecture, CPU, RAM, free disk space, GPU/driver if applicable, and network type/restrictions.
+Use a fresh Windows x64 virtual machine or physical machine with no Python installed. A fresh VM counts; testers do not need spare physical hardware. **Target matrix:** Windows 11 24H2 x64 is the primary baseline; Windows 11 23H2 x64 and Windows 10 22H2 x64 are additional legacy-compatibility targets where a tester has access. Record exact edition/version/build because support status differs by edition and servicing channel. ARM64 and non-admin installation are best-effort compatibility checks: record results if available, but their absence alone does not block the baseline verification. Record CPU, RAM, free disk space, GPU/driver if applicable, and network type/restrictions.
 
-**Windows Sandbox option:** On supported Windows 10/11 Pro, Enterprise, or Education editions, enable **Windows Sandbox** in “Turn Windows features on or off,” restart if requested, and launch Windows Sandbox from Start. Copy the project ZIP into the sandbox and run the checks there. Sandbox changes are discarded when it closes, so save the test report and logs outside it before closing. Availability depends on Windows edition, virtualization support, and device policy.
+**Windows Sandbox option:** On supported Windows 10/11 Pro, Enterprise, or Education editions, enable **Windows Sandbox** in “Turn Windows features on or off,” restart if requested, and launch Windows Sandbox from Start. Copy the project ZIP into the sandbox and run the checks there. Sandbox changes are discarded when it closes. **Before shutdown, copy the report, logs, screenshots, output metadata, and any permitted test artifacts to a host-shared folder (for example, a mapped folder accessible through `\\tsclient` in a Remote Desktop session) or another approved host location.** Verify the files are present on the host before closing Sandbox. Availability depends on Windows edition, virtualization support, and device policy.
 
 **Hyper-V / VM option:** Use an isolated fresh Windows VM if Sandbox is unavailable. A new VM snapshot with no Python installed is acceptable. Do not use a work device or VM in a way that violates organization policy.
 
@@ -50,7 +50,7 @@ For a signed installer, verify the signature from PowerShell with `Get-Authentic
 signtool verify /pa /v .\installer.exe
 ```
 
-**Pass criteria:** Download source and SHA-256 are recorded; any published checksum matches exactly. If the artifact is unsigned or no official checksum exists, record NOT AVAILABLE rather than PASS for signature/publisher verification.
+**Pass criteria:** Download source and SHA-256 are recorded; any published checksum matches exactly. Record signature status as **SIGNED AND VALID**, **UNSIGNED — EXPECTED**, **INVALID SIGNATURE**, or **NOT CHECKED**. Unsigned is expected for the current project unless a signed release is explicitly published; it is not itself a failure. A published signature that fails verification is a failure. If no official checksum exists, record that no official checksum is available rather than implying a comparison passed.
 
 ### Section 3 — Install and first launch
 
@@ -60,7 +60,7 @@ signtool verify /pa /v .\installer.exe
 4. Launch with `run.bat`. Confirm the local Gradio interface loads at its local address and does not create public sharing or a tunnel.
 5. Confirm the app can start again after a clean reboot.
 
-**Pass criteria:** Installation exits successfully, required managed runtime/dependencies are present, the UI loads locally within 60 seconds after `run.bat` starts (excluding first-time install/download time), no administrator privilege is required for the documented path, and logs contain no unhandled startup error. If a different threshold is required by the environment, record the measured time and reason; do not silently change the threshold.
+**Pass criteria:** Installation exits successfully, required managed runtime/dependencies are present, the UI loads locally within 60 seconds after `run.bat` starts (excluding first-time install/download time), and logs contain no unhandled startup error. Record whether the test used an administrator or standard account. Standard non-admin installation is best-effort and should be reported when available; if it is not tested, mark it NOT TESTED rather than blocking the primary baseline. If a different launch-time threshold is required by the environment, record the measured time and reason; do not silently change the threshold.
 
 Record any Microsoft Defender SmartScreen warning exactly. Do not advise contributors to bypass organizational security policy. If a warning blocks execution, mark the result BLOCKED/FAIL as appropriate and attach a screenshot with personal information redacted.
 
@@ -132,6 +132,8 @@ Use only **PASS**, **FAIL**, **BLOCKED**, or **NOT TESTED** per check. Overall P
 
 ### Verified issue closure record
 
+A `verified` label requires either (a) an external tester's completed results template, or (b) a maintainer's own test on a fresh VM, with the tested ZIP/installer SHA-256 recorded. Maintainer self-tests must be identified as such and must not be described as independent verification. The applicable acceptance criteria and evidence must be attached either way.
+
 When closing a verification issue, add a closing comment with:
 - Tester and date (UTC)
 - Windows edition/version/build and architecture
@@ -144,7 +146,7 @@ A `verified` label should be applied only after evidence meets the acceptance cr
 
 ## Results template
 
-Copy [`verification-results/TEMPLATE.md`](../verification-results/TEMPLATE.md) for each run. The template includes a compact checkbox table and fields suitable for later aggregation.
+Copy [`verification-results/TEMPLATE.md`](../verification-results/TEMPLATE.md) for each run. Add completed reports to the `verification-results/` folder when appropriate and update the [results index](../verification-results/README.md) with the date, Windows build, tester, scope, outcome, and report link. The template includes a compact checkbox table and fields suitable for later aggregation.
 
 ## Known issues / current limitations
 
