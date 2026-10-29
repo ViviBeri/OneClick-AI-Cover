@@ -1,0 +1,57 @@
+name: Manual clean Windows install
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  clean-install:
+    name: Fresh Windows install and local launch
+    runs-on: windows-latest
+    timeout-minutes: 180
+    steps:
+      - name: Check clean runner environment
+        shell: pwsh
+        run: |
+          Get-ComputerInfo | Select-Object WindowsProductName, WindowsVersion, OsBuildNumber, OsArchitecture
+          Get-PSDrive -Name C | Select-Object Name, Used, Free
+
+      - uses: actions/checkout@v4
+
+      - name: Run the real installer
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          cmd.exe /d /c "install.bat <NUL > install.log 2>&1"
+          $installExit = $LASTEXITCODE
+          Get-Content install.log -Tail 120
+          if ($installExit -ne 0) {
+            throw "install.bat failed with exit code $installExit. See install.log artifact."
+          }
+          if (-not (Test-Path ".venv\Scripts\python.exe")) {
+            throw "Installer returned success but the app Python interpreter is missing."
+          }
+          if (-not (Test-Path "vendor\rvc\infer\cli.py")) {
+            throw "Installer returned success but the RVC inference CLI is missing."
+          }
+
+      - name: Launch app using the installed runtime
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $env:GRADIO_ANALYTICS_ENABLED = 'False'
+          $env:PYTHONUNBUFFERED = '1'
+          .\.venv\Scripts\python.exe scripts\smoke_test_app.py
+
+      - name: Upload install logs and environment evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: clean-windows-install-evidence
+          path: |
+            install.log
+            logs/oneclick-cover.log
+          if-no-files-found: ignore
+          retention-days: 14
