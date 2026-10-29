@@ -238,3 +238,41 @@ def test_mix_audio_pads_shorter_track_and_applies_gains(tmp_path):
     assert np.allclose(mixed[:, 0], expected, atol=1 / 32768)
     assert np.allclose(mixed[:, 1], expected, atol=1 / 32768)
 
+def test_transcode_removes_stale_output_before_failed_ffmpeg(monkeypatch, tmp_path):
+    monkeypatch.setattr(audio_utils, "_ffmpeg_path", lambda: "managed-ffmpeg.exe")
+    monkeypatch.setattr(
+        audio_utils,
+        "_run",
+        lambda command: (_ for _ in ()).throw(RuntimeError("synthetic ffmpeg failure")),
+    )
+    destination = tmp_path / "output.wav"
+    destination.write_bytes(b"stale audio from previous run")
+
+    try:
+        audio_utils.transcode_to_wav(tmp_path / "input.mp3", destination)
+    except RuntimeError as exc:
+        assert "synthetic ffmpeg failure" in str(exc)
+    else:
+        raise AssertionError("Expected FFmpeg failure to propagate")
+
+    assert not destination.exists()
+
+
+def test_mp3_export_removes_stale_output_before_failed_ffmpeg(monkeypatch, tmp_path):
+    monkeypatch.setattr(audio_utils, "_ffmpeg_path", lambda: "managed-ffmpeg.exe")
+    monkeypatch.setattr(
+        audio_utils,
+        "_run",
+        lambda command: (_ for _ in ()).throw(RuntimeError("synthetic ffmpeg failure")),
+    )
+    destination = tmp_path / "output.mp3"
+    destination.write_bytes(b"stale MP3 from previous run")
+
+    try:
+        audio_utils.export_mp3(tmp_path / "input.wav", destination)
+    except RuntimeError as exc:
+        assert "synthetic ffmpeg failure" in str(exc)
+    else:
+        raise AssertionError("Expected FFmpeg failure to propagate")
+
+    assert not destination.exists()
