@@ -141,8 +141,6 @@ This remains an advanced, partly manual workflow. The [voice-training guide](doc
 
 </details>
 
-<!-- previous documentation list consolidated into the grouped links above -->
-<!-- - [Installation and troubleshooting](docs/troubleshooting.md) -->
 - [Voice training](docs/voice-training.md)
 - [Remote training options](docs/remote-training.md)
 - [Verification checklist](docs/verification.md)
