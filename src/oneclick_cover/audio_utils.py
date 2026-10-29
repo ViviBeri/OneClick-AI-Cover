@@ -45,6 +45,8 @@ def probe_audio(path: Path) -> dict:
 
 def _read_stereo(path: Path):
     audio, sr = sf.read(str(path), dtype="float32", always_2d=True)
+    if audio.shape[0] == 0:
+        raise RuntimeError(f"Audio file contains no samples: {path}")
     if audio.shape[1] == 1: audio = np.repeat(audio, 2, axis=1)
     elif audio.shape[1] > 2: audio = audio[:, :2]
     return audio, sr
