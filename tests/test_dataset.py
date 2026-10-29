@@ -154,3 +154,41 @@ def test_preparation_rejects_success_without_nonempty_output(monkeypatch, tmp_pa
 
     assert previous.read_bytes() == b"previous good recording"
     assert not list(target.glob(".preparing-*"))
+
+
+def test_later_conversion_failure_preserves_dataset_after_earlier_staging_success(monkeypatch, tmp_path):
+    from types import SimpleNamespace
+    from oneclick_cover import dataset
+
+    first = tmp_path / "first.wav"
+    second = tmp_path / "second.wav"
+    first.write_bytes(b"first input")
+    second.write_bytes(b"second input")
+    target = tmp_path / "datasets" / "MyVoice"
+    target.mkdir(parents=True)
+    previous = target / "recording_001.wav"
+    previous.write_bytes(b"previous good recording")
+    notes = target / "notes.txt"
+    notes.write_text("keep", encoding="utf-8")
+
+    monkeypatch.setattr(dataset, "_ffmpeg_path", lambda: "/tools/ffmpeg.exe")
+    calls = []
+
+    def fake_run(command, **kwargs):
+        calls.append(command)
+        if len(calls) == 1:
+            Path(command[-1]).write_bytes(b"first staged output")
+            return SimpleNamespace(returncode=0, stderr="", stdout="")
+        return SimpleNamespace(returncode=1, stderr="second recording failed", stdout="")
+
+    monkeypatch.setattr(dataset.subprocess, "run", fake_run)
+
+    with pytest.raises(RuntimeError, match="second recording failed"):
+        prepare_recordings([first, second], "MyVoice", tmp_path / "datasets")
+
+    assert len(calls) == 2
+    assert previous.read_bytes() == b"previous good recording"
+    assert notes.read_text(encoding="utf-8") == "keep"
+    assert sorted(path.name for path in target.glob("recording_*.wav")) == ["recording_001.wav"]
+    assert not list(target.glob(".preparing-*"))
+
