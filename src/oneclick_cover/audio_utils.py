@@ -35,9 +35,9 @@ def transcode_to_wav(source: Path, destination: Path) -> None:
     try:
         audio, sr = sf.read(str(source), dtype="float32", always_2d=True)
         sf.write(str(destination), audio, sr)
-        _require_output_file(destination, "Audio conversion")
     except Exception as exc:
         raise RuntimeError("Could not decode this file. Re-run install.bat so the managed FFmpeg package is installed.") from exc
+    _require_output_file(destination, "Audio conversion")
 
 def probe_audio(path: Path) -> dict:
     info = sf.info(str(path)) if path.suffix.lower() in {".wav", ".flac"} else None
