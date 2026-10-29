@@ -49,6 +49,7 @@ def prepare_training_dataset(uploaded_files, dataset_name, progress=gr.Progress(
 def generate(song, model, pitch, vocal_gain, instrumental_gain, fmt, progress=gr.Progress()):
     if not song: raise gr.Error("Choose an input song first.")
     if not model: raise gr.Error("Add an authorized .pth model to models/voices, then refresh.")
+    job = None
     try:
         source=Path(song); validate_audio_file(source); model_path=(VOICE_DIR/model).resolve()
         if model_path.parent != VOICE_DIR.resolve(): raise ValueError("Invalid voice-model selection.")
@@ -65,6 +66,8 @@ def generate(song, model, pitch, vocal_gain, instrumental_gain, fmt, progress=gr
             mp3=job/"cover.mp3"; export_mp3(output,mp3); output=mp3
         progress(1,desc="Done"); return str(output), "Saved: "+str(output)
     except Exception as e:
+        if job is not None:
+            shutil.rmtree(job, ignore_errors=True)
         logging.exception("Cover generation failed"); raise gr.Error(str(e)) from e
 with gr.Blocks(title="OneClick-AI-Cover") as demo:
     gr.Markdown("""# OneClick-AI-Cover
