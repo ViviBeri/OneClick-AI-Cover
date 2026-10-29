@@ -4,6 +4,12 @@ Free, open-source, Windows-first local AI singing-cover creator. Separate vocals
 
 > **Status: early integration build.** The interface, Demucs separation, audio mixing/export, and RVC CLI adapter are scaffolded. CI smoke checks do not certify the Windows installer or prove full end-to-end conversion.
 
+<p align="center">
+  <img src="https://raw.githubusercontent.com/ViviBeri/OneClick-AI-Cover/main/readme-hero.svg" alt="OneClick AI Cover animated 3D project banner" width="100%" />
+</p>
+
+
+
 ## Verification status
 
 | Area | Status | Verified by |
