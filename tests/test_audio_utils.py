@@ -314,3 +314,40 @@ def test_resample_removes_stale_destination_when_ffmpeg_unavailable(monkeypatch,
         audio_utils.match_sample_rate(source, reference, destination)
 
     assert not destination.exists()
+
+
+
+def test_mix_audio_removes_stale_output_when_sample_rates_mismatch(tmp_path):
+    vocal = tmp_path / "vocal.wav"
+    instrumental = tmp_path / "instrumental.wav"
+    output = tmp_path / "mix.wav"
+    sf.write(vocal, [0.1, -0.1], 22050)
+    sf.write(instrumental, [0.1, -0.1], 44100)
+    output.write_bytes(b"stale mix")
+
+    try:
+        audio_utils.mix_audio(vocal, instrumental, output)
+    except RuntimeError as exc:
+        assert "Sample-rate mismatch" in str(exc)
+    else:
+        raise AssertionError("Expected sample-rate mismatch to fail clearly")
+
+    assert not output.exists(), "A failed mix must remove any previous output"
+
+
+def test_mix_audio_removes_stale_output_when_input_is_empty(tmp_path):
+    vocal = tmp_path / "vocal.wav"
+    instrumental = tmp_path / "instrumental.wav"
+    output = tmp_path / "mix.wav"
+    sf.write(vocal, [], 22050)
+    sf.write(instrumental, [0.1, -0.1], 22050)
+    output.write_bytes(b"stale mix")
+
+    try:
+        audio_utils.mix_audio(vocal, instrumental, output)
+    except RuntimeError as exc:
+        assert "Audio file contains no samples" in str(exc)
+    else:
+        raise AssertionError("Expected empty input to fail clearly")
+
+    assert not output.exists(), "A failed mix must remove any previous output"
