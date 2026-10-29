@@ -105,3 +105,52 @@ def test_failed_replacement_preserves_existing_dataset(monkeypatch, tmp_path):
     assert previous.read_bytes() == b"previous good recording"
     assert notes.read_text(encoding="utf-8") == "keep"
     assert not list(target.glob(".preparing-*"))
+
+
+def test_preparation_rejects_unsupported_recording_before_conversion(monkeypatch, tmp_path):
+    from oneclick_cover import dataset
+
+    source = tmp_path / "voice.txt"
+    source.write_text("not audio", encoding="utf-8")
+    monkeypatch.setattr(dataset, "_ffmpeg_path", lambda: "/tools/ffmpeg.exe")
+    monkeypatch.setattr(dataset.subprocess, "run", lambda *args, **kwargs: pytest.fail("conversion must not run"))
+
+    with pytest.raises(ValueError, match="Unsupported recording format"):
+        prepare_recordings([source], "MyVoice", tmp_path / "datasets")
+
+
+def test_preparation_rejects_empty_recording_before_conversion(monkeypatch, tmp_path):
+    from oneclick_cover import dataset
+
+    source = tmp_path / "voice.wav"
+    source.touch()
+    monkeypatch.setattr(dataset, "_ffmpeg_path", lambda: "/tools/ffmpeg.exe")
+    monkeypatch.setattr(dataset.subprocess, "run", lambda *args, **kwargs: pytest.fail("conversion must not run"))
+
+    with pytest.raises(ValueError, match="Recording is empty"):
+        prepare_recordings([source], "MyVoice", tmp_path / "datasets")
+
+
+def test_preparation_rejects_success_without_nonempty_output(monkeypatch, tmp_path):
+    from types import SimpleNamespace
+    from oneclick_cover import dataset
+
+    source = tmp_path / "voice.wav"
+    source.write_bytes(b"input")
+    target = tmp_path / "datasets" / "MyVoice"
+    target.mkdir(parents=True)
+    previous = target / "recording_001.wav"
+    previous.write_bytes(b"previous good recording")
+
+    monkeypatch.setattr(dataset, "_ffmpeg_path", lambda: "/tools/ffmpeg.exe")
+    monkeypatch.setattr(
+        dataset.subprocess,
+        "run",
+        lambda command, **kwargs: SimpleNamespace(returncode=0, stderr="", stdout=""),
+    )
+
+    with pytest.raises(RuntimeError, match="Could not convert voice.wav"):
+        prepare_recordings([source], "MyVoice", tmp_path / "datasets")
+
+    assert previous.read_bytes() == b"previous good recording"
+    assert not list(target.glob(".preparing-*"))
