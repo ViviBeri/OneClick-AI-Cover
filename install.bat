@@ -23,7 +23,7 @@ set "SETUP_STAGE=Preparing folders"
 if not exist "%UV_EXE%" (
   set "SETUP_STAGE=Downloading the uv runtime manager"
   echo [1/6] Downloading uv runtime manager...
-  powershell -NoProfile -ExecutionPolicy Bypass -Command "$ErrorActionPreference='Stop'; $ProgressPreference='SilentlyContinue'; Invoke-WebRequest -Uri 'https://github.com/astral-sh/uv/releases/latest/download/uv-x86_64-pc-windows-msvc.zip' -OutFile '%CD%\.runtime\uv.zip'; Expand-Archive -Force '%CD%\.runtime\uv.zip' '%CD%\.runtime\uv-unpack'; Copy-Item '%CD%\.runtime\uv-unpack\uv.exe' '%UV_EXE%' -Force"
+  powershell -NoProfile -ExecutionPolicy Bypass -Command "$ErrorActionPreference='Stop'; $ProgressPreference='SilentlyContinue'; [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; Invoke-WebRequest -Uri 'https://github.com/astral-sh/uv/releases/latest/download/uv-x86_64-pc-windows-msvc.zip' -OutFile '%CD%\.runtime\uv.zip'; Expand-Archive -Force '%CD%\.runtime\uv.zip' '%CD%\.runtime\uv-unpack'; Copy-Item '%CD%\.runtime\uv-unpack\uv.exe' '%UV_EXE%' -Force"
   if errorlevel 1 goto failed
 )
 set "SETUP_STAGE=Installing managed Python 3.10 and 3.12"
@@ -42,7 +42,7 @@ if not exist "%RVC_DIR%\webui.py" (
   set "SETUP_STAGE=Downloading the pinned RVC backend"
   echo [4/6] Downloading pinned RVC inference backend...
   if exist "%RVC_DIR%" rmdir /s /q "%RVC_DIR%"
-  powershell -NoProfile -ExecutionPolicy Bypass -Command "$ErrorActionPreference='Stop'; $ProgressPreference='SilentlyContinue'; Invoke-WebRequest -Uri 'https://github.com/RVC-Project/Retrieval-based-Voice-Conversion-WebUI/archive/%RVC_COMMIT%.zip' -OutFile '%CD%\.runtime\rvc.zip'; Expand-Archive -Force '%CD%\.runtime\rvc.zip' '%CD%\.runtime\rvc-unpack'; $src=Get-ChildItem '%CD%\.runtime\rvc-unpack' -Directory | Select-Object -First 1; Move-Item $src.FullName '%RVC_DIR%'"
+  powershell -NoProfile -ExecutionPolicy Bypass -Command "$ErrorActionPreference='Stop'; $ProgressPreference='SilentlyContinue'; [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; Invoke-WebRequest -Uri 'https://github.com/RVC-Project/Retrieval-based-Voice-Conversion-WebUI/archive/%RVC_COMMIT%.zip' -OutFile '%CD%\.runtime\rvc.zip'; Expand-Archive -Force '%CD%\.runtime\rvc.zip' '%CD%\.runtime\rvc-unpack'; $src=Get-ChildItem '%CD%\.runtime\rvc-unpack' -Directory | Select-Object -First 1; Move-Item $src.FullName '%RVC_DIR%'"
   if errorlevel 1 goto failed
 )
 if not exist "%RVC_DIR%\webui.py" (
@@ -81,6 +81,8 @@ echo.
 echo SETUP FAILED during: %SETUP_STAGE%
 echo Keep this window open and save the last error lines above.
 echo Check internet access, free disk space, and security software download restrictions.
+echo If the error mentions SSL/TLS, check Windows date/time and retry on an unrestricted network.
+echo This installer requires HTTPS with TLS 1.2 support.
 echo Troubleshooting guide: https://github.com/ViviBeri/OneClick-AI-Cover/blob/main/docs/troubleshooting.md
 echo Fix the reported issue, then run install.bat again.
 pause
