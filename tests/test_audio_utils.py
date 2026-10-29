@@ -1,5 +1,7 @@
 from pathlib import Path
 
+import soundfile as sf
+
 from oneclick_cover import audio_utils
 
 
