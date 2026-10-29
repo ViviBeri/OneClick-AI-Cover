@@ -22,6 +22,7 @@ def _run(command: list[str]) -> None:
         raise RuntimeError(f"Command failed ({result.returncode}): {' '.join(command[:4])}\n{detail}")
 
 def transcode_to_wav(source: Path, destination: Path) -> None:
+    destination.parent.mkdir(parents=True, exist_ok=True)
     ffmpeg = _ffmpeg_path()
     if ffmpeg:
         _run([ffmpeg, "-y", "-i", str(source), "-vn", "-ac", "2", "-ar", "44100", str(destination)])
@@ -57,6 +58,7 @@ def mix_audio(vocal_path: Path, instrumental_path: Path, output_path: Path, voca
     sf.write(str(output_path), mix, vocal_sr, subtype="PCM_16")
 
 def export_mp3(source: Path, destination: Path) -> None:
+    destination.parent.mkdir(parents=True, exist_ok=True)
     ffmpeg = _ffmpeg_path()
     if not ffmpeg: raise RuntimeError("MP3 export needs FFmpeg. Re-run install.bat to install the managed FFmpeg helper, or choose WAV output.")
     _run([ffmpeg, "-y", "-i", str(source), "-codec:a", "libmp3lame", "-q:a", "2", str(destination)])
