@@ -19,13 +19,19 @@
 
 OneClick-AI-Cover is designed to take an audio track through a local workflow:
 
-<div align="center">
+<p align="center">
+  <img src="readme-pipeline-3d.svg" alt="Animated 3D isometric workflow: prepare audio, separate vocals, convert with RVC, mix, and export" width="100%" />
+</p>
 
-| 1 · Prepare | 2 · Separate | 3 · Convert | 4 · Mix & export |
-|:---:|:---:|:---:|:---:|
-| Audio input | Demucs vocals + instrumental | Compatible RVC `.pth` model | Combine tracks and save WAV / optional MP3 |
+<p align="center"><sub>The animated 3D workflow is README artwork. It is not a live application preview or a claim that end-to-end conversion has been verified.</sub></p>
 
-</div>
+| Stage | What happens |
+|---|---|
+| **01 · Prepare** | Validate the selected MP3, WAV, or FLAC file and prepare audio for processing. |
+| **02 · Separate** | Demucs separates vocals from the instrumental. |
+| **03 · Convert** | The RVC adapter uses a compatible, inference-ready `.pth` model. |
+| **04 · Mix** | Converted vocals are sample-rate matched and mixed with the instrumental. |
+| **05 · Export** | Save a WAV file or choose optional MP3 export through FFmpeg. |
 
 ### Highlights
 
@@ -70,7 +76,7 @@ Audio file (MP3 / WAV / FLAC)
  Sample-rate matching -> Mix -> WAV / optional MP3
 ```
 
-The main interface is in `app.py`. Audio utilities live in `src/oneclick_cover/audio_utils.py`; automated tests are in `tests/`. The animated isometric banner lives in `readme-hero.svg` and is an SVG asset for the GitHub README, not a runtime dependency.
+The main interface is in `app.py`. Audio utilities live in `src/oneclick_cover/audio_utils.py`; automated tests are in `tests/`. The animated README artwork is built from `readme-hero.svg` and `readme-pipeline-3d.svg`. Both are lightweight SVG assets and are **not runtime dependencies**. The app itself remains a Gradio interface; this update adds a 3D visual identity to the repository documentation, not a 3D application UI.
 
 ## Verification status
 
@@ -108,7 +114,35 @@ This remains an advanced, partly manual workflow. The [voice-training guide](doc
 
 ## Project documentation
 
+<details>
+<summary><strong>Setup, verification, and troubleshooting</strong></summary>
+
 - [Installation and troubleshooting](docs/troubleshooting.md)
+- [Verification checklist](docs/verification.md)
+
+</details>
+
+<details>
+<summary><strong>Voice models and training</strong></summary>
+
+- [Voice training](docs/voice-training.md)
+- [Remote training options](docs/remote-training.md)
+
+</details>
+
+<details>
+<summary><strong>Safety, licenses, and contributions</strong></summary>
+
+- [Legal and ethical use](docs/ETHICS_AND_LEGAL.md)
+- [Third-party dependencies and licenses](docs/THIRD_PARTY.md)
+- [Community guidelines](docs/COMMUNITY.md)
+- [Contributing](CONTRIBUTING.md)
+- [Security policy](SECURITY.md)
+
+</details>
+
+<!-- previous documentation list consolidated into the grouped links above -->
+<!-- - [Installation and troubleshooting](docs/troubleshooting.md) -->
 - [Voice training](docs/voice-training.md)
 - [Remote training options](docs/remote-training.md)
 - [Verification checklist](docs/verification.md)
