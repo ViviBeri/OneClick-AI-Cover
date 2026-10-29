@@ -18,7 +18,7 @@ Free, open-source, Windows-first local AI singing-cover creator. Separate vocals
 
 CI status badge: ![Windows Checks](https://github.com/ViviBeri/OneClick-AI-Cover/actions/workflows/windows-checks.yml/badge.svg)
 
-Automated regression coverage includes sample-rate matching (including 48 kHz-to-44.1 kHz resampling when FFmpeg is available), mono-vocal mixing, stale/invalid RVC output rejection, mocked pipeline success/failure paths for Demucs, RVC, and MP3 export, and protection against stale WAV/MP3/resampled files after failed FFmpeg operations. The mocked pipeline tests exercise orchestration with simulated Demucs/RVC stages; they **do not** prove real model inference or end-to-end audio quality. Check the linked Actions runs for the status of the latest commit.
+Automated regression coverage includes sample-rate matching (including 48 kHz-to-44.1 kHz resampling when FFmpeg is available), mono-vocal mixing, stale/invalid RVC output rejection, mocked pipeline success/failure paths for Demucs, RVC, and MP3 export, and protection against stale WAV/MP3/resampled files after failed FFmpeg operations, and cleanup of partial cover-job directories after pipeline failures. The mocked pipeline tests exercise orchestration with simulated Demucs/RVC stages; they **do not** prove real model inference or end-to-end audio quality. Check the linked Actions runs for the status of the latest commit.
 
 **Important:** a green CI run is not a clean-machine installation test. See [the detailed verification plan](docs/verification.md) and copyable [verification-results template](verification-results/TEMPLATE.md). Do not describe an item as verified until the specified acceptance criteria and evidence are recorded.
 
