@@ -119,7 +119,7 @@ def test_generate_reports_rvc_failure_without_claiming_success(monkeypatch, tmp_
         app.generate(str(source), model.name, 0, 1.0, 0.85, "WAV")
 
     # A failed conversion must not leave a plausible finished cover behind.
-    assert not list(Path(app.OUTPUT_DIR).glob("cover_*/cover.wav"))
+    assert not list(Path(app.OUTPUT_DIR).glob("cover_*"))
 
 def test_generate_reports_mp3_export_failure(monkeypatch, tmp_path):
     import gradio as gr
@@ -135,7 +135,7 @@ def test_generate_reports_mp3_export_failure(monkeypatch, tmp_path):
     with pytest.raises(gr.Error, match="MP3 export failed: test failure"):
         app.generate(str(source), model.name, 0, 1.0, 0.85, "MP3")
 
-    assert not list(Path(app.OUTPUT_DIR).glob("cover_*/cover.mp3"))
+    assert not list(Path(app.OUTPUT_DIR).glob("cover_*"))
 
 def test_generate_reports_demucs_failure_without_claiming_success(monkeypatch, tmp_path):
     import gradio as gr
