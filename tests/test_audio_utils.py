@@ -8,7 +8,7 @@ from oneclick_cover import audio_utils
 def test_transcode_uses_managed_ffmpeg_when_available(monkeypatch, tmp_path):
     commands = []
     monkeypatch.setattr(audio_utils, "_ffmpeg_path", lambda: "managed-ffmpeg.exe")
-    monkeypatch.setattr(audio_utils, "_run", lambda command: commands.append(command))
+    monkeypatch.setattr(audio_utils, "_run", lambda command: (commands.append(command), Path(command[-1]).write_bytes(b"output"))[0])
 
     source = tmp_path / "input.mp3"
     destination = tmp_path / "output.wav"
@@ -130,3 +130,30 @@ def test_run_reports_command_failure_details(monkeypatch):
         assert "synthetic ffmpeg failure" in str(exc)
     else:
         raise AssertionError("Expected command failure to raise RuntimeError")
+
+
+
+def test_transcode_rejects_success_without_output(monkeypatch, tmp_path):
+    monkeypatch.setattr(audio_utils, "_ffmpeg_path", lambda: "managed-ffmpeg.exe")
+    monkeypatch.setattr(audio_utils, "_run", lambda command: None)
+
+    destination = tmp_path / "output.wav"
+    try:
+        audio_utils.transcode_to_wav(tmp_path / "input.mp3", destination)
+    except RuntimeError as exc:
+        assert "without creating a non-empty output file" in str(exc)
+    else:
+        raise AssertionError("Expected conversion to reject a missing output")
+
+
+def test_mp3_export_rejects_empty_output(monkeypatch, tmp_path):
+    monkeypatch.setattr(audio_utils, "_ffmpeg_path", lambda: "managed-ffmpeg.exe")
+    monkeypatch.setattr(audio_utils, "_run", lambda command: Path(command[-1]).touch())
+
+    destination = tmp_path / "output.mp3"
+    try:
+        audio_utils.export_mp3(tmp_path / "input.wav", destination)
+    except RuntimeError as exc:
+        assert "without creating a non-empty output file" in str(exc)
+    else:
+        raise AssertionError("Expected MP3 export to reject an empty output")
