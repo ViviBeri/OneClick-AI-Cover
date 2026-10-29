@@ -2,7 +2,27 @@
 
 Free, open-source, Windows-first local AI singing-cover creator. Separate vocals from a song, convert the vocal with a compatible RVC voice model, remix it with the instrumental, and export audio locally.
 
-> **Status: early integration build.** The interface, Demucs separation, audio mixing/export, and RVC CLI adapter are scaffolded. The Windows CI workflow now tests imports and Gradio startup, but the automatic installer and full end-to-end conversion still need testing on a clean Windows machine.
+> **Status: early integration build.** The interface, Demucs separation, audio mixing/export, and RVC CLI adapter are scaffolded. CI smoke checks do not certify the Windows installer or prove full end-to-end conversion.
+
+## Verification status
+
+| Area | Status | Verified by |
+|---|---|---|
+| Build, source compilation, and unit tests | ✅ CI smoke checks | [Windows Checks workflow](.github/workflows/windows-checks.yml) |
+| Core dependency imports and local Gradio startup | ✅ CI smoke checks | [Windows Checks workflow](.github/workflows/windows-checks.yml) |
+| Installer on a clean Windows 10/11 x64 machine | ⏳ Pending | [Issue #1](https://github.com/ViviBeri/OneClick-AI-Cover/issues/1) |
+| Managed FFmpeg MP3 import/export and failure handling | ⏳ Pending | [Issue #2](https://github.com/ViviBeri/OneClick-AI-Cover/issues/2) |
+| Complete authorized-audio conversion (Demucs → RVC → mix → export) | ⏳ Pending | [Issue #3](https://github.com/ViviBeri/OneClick-AI-Cover/issues/3) |
+| Clean uninstall / removal of app-managed files | ⏳ Pending | [Verification plan](docs/verification.md#section-6-uninstall-verification) |
+| Signed installer / published release checksum | ⚪ Not available yet | No signed installer release artifact is published |
+
+CI status badge: ![Windows Checks](https://github.com/ViviBeri/OneClick-AI-Cover/actions/workflows/windows-checks.yml/badge.svg)
+
+**Important:** a green CI run is not a clean-machine installation test. See [the detailed verification plan](docs/verification.md) and copyable [verification-results template](verification-results/TEMPLATE.md). Do not describe an item as verified until the specified acceptance criteria and evidence are recorded.
+
+### Installer integrity / SHA-256
+
+There is not yet a published, versioned installer release asset with an official SHA-256 value to compare against. Do not treat a locally calculated hash as an official checksum. Once a versioned installer/ZIP is published, the release should include its SHA-256 next to the download link and the same value in the release notes. Testers can calculate and record the downloaded file's hash using the command in [Section 2](docs/verification.md#section-2-download-and-integrity-check).
 
 ## Setup without manually installing Python
 
@@ -26,10 +46,6 @@ Setup downloads several large packages and may take a long time. You need a stab
 - Experimental **Train My Voice** tab that launches the upstream RVC training UI
 - In-app **Import Voice Model** tab to copy an inference-ready `.pth` file into the local voice-model folder
 - **Prepare Voice Recordings** tab to convert multiple recordings to mono WAVs for the RVC training dataset
-
-## Verification status
-
-The Windows CI workflow tests Python 3.10 and 3.11, compiles sources, runs unit tests, checks core dependency imports, and launches the Gradio interface locally to verify its HTTP response. This is useful smoke coverage but **does not certify the installer on a fresh Windows machine or prove end-to-end conversion**. See [the verification plan and results template](docs/verification.md) before reporting success. No clean-machine result or complete end-to-end run is recorded yet.
 
 ## Hardware expectations
 
