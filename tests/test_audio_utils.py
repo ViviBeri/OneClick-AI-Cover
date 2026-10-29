@@ -172,3 +172,22 @@ def test_mix_audio_rejects_missing_output_after_write(tmp_path, monkeypatch):
         assert "Audio mix completed without creating a non-empty output file" in str(exc)
     else:
         raise AssertionError("Expected mixing to reject a missing output")
+
+
+def test_transcode_fallback_gives_helpful_error_for_undecodable_input(monkeypatch, tmp_path):
+    monkeypatch.setattr(audio_utils, "_ffmpeg_path", lambda: None)
+    source = tmp_path / "corrupt.wav"
+    source.write_bytes(b"this is not a valid audio file")
+    destination = tmp_path / "nested" / "output.wav"
+
+    try:
+        audio_utils.transcode_to_wav(source, destination)
+    except RuntimeError as exc:
+        assert "Could not decode this file" in str(exc)
+        assert "re-run install.bat" in str(exc)
+        assert exc.__cause__ is not None
+    else:
+        raise AssertionError("Expected undecodable input to produce a helpful error")
+
+    assert not destination.exists()
+
