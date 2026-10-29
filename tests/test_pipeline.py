@@ -136,3 +136,18 @@ def test_generate_reports_mp3_export_failure(monkeypatch, tmp_path):
         app.generate(str(source), model.name, 0, 1.0, 0.85, "MP3")
 
     assert not list(Path(app.OUTPUT_DIR).glob("cover_*/cover.mp3"))
+
+def test_generate_reports_demucs_failure_without_claiming_success(monkeypatch, tmp_path):
+    import gradio as gr
+
+    source, model = _prepare_fake_pipeline(monkeypatch, tmp_path)
+
+    def fail_separation(input_wav, job_dir):
+        raise RuntimeError("Demucs separation failed: test failure")
+
+    monkeypatch.setattr(app, "separate_vocals", fail_separation)
+
+    with pytest.raises(gr.Error, match="Demucs separation failed: test failure"):
+        app.generate(str(source), model.name, 0, 1.0, 0.85, "WAV")
+
+    assert not list(Path(app.OUTPUT_DIR).glob("cover_*/cover.wav"))
