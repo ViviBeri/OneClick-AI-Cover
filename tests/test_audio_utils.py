@@ -63,7 +63,7 @@ def test_transcode_creates_destination_directory_before_ffmpeg(monkeypatch, tmp_
 def test_export_mp3_creates_destination_directory(monkeypatch, tmp_path):
     commands = []
     monkeypatch.setattr(audio_utils, "_ffmpeg_path", lambda: "managed-ffmpeg.exe")
-    monkeypatch.setattr(audio_utils, "_run", lambda command: commands.append(command))
+    monkeypatch.setattr(audio_utils, "_run", lambda command: (commands.append(command), Path(command[-1]).write_bytes(b"output"))[0])
 
     destination = tmp_path / "nested" / "output.mp3"
     audio_utils.export_mp3(tmp_path / "input.wav", destination)
