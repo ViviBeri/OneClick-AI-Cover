@@ -104,3 +104,19 @@ def test_generate_resamples_48k_rvc_output_before_mixing(monkeypatch, tmp_path):
     assert sample_rate == 44100
     assert audio.shape == (22050, 2)
     assert "Saved:" in status
+
+def test_generate_reports_rvc_failure_without_claiming_success(monkeypatch, tmp_path):
+    import gradio as gr
+
+    source, model = _prepare_fake_pipeline(monkeypatch, tmp_path)
+
+    def fail_conversion(input_vocal, output_vocal, model_path, pitch=0):
+        raise RuntimeError("RVC inference failed: test failure")
+
+    monkeypatch.setattr(app, "convert_voice", fail_conversion)
+
+    with pytest.raises(gr.Error, match="RVC inference failed: test failure"):
+        app.generate(str(source), model.name, 0, 1.0, 0.85, "WAV")
+
+    # A failed conversion must not leave a plausible finished cover behind.
+    assert not list(Path(app.OUTPUT_DIR).glob("cover_*/cover.wav"))
