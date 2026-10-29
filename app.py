@@ -3,7 +3,7 @@ import logging, sys, tempfile, shutil
 from pathlib import Path
 import gradio as gr
 sys.path.insert(0, str(Path(__file__).resolve().parent / "src"))
-from oneclick_cover.audio_utils import mix_audio, probe_audio, transcode_to_wav
+from oneclick_cover.audio_utils import match_sample_rate, mix_audio, probe_audio, transcode_to_wav
 from oneclick_cover.settings import VOICE_DIR, OUTPUT_DIR, LOG_DIR
 from oneclick_cover.validation import validate_audio_file, validate_voice_model
 from oneclick_cover.separation import separate_vocals
@@ -58,6 +58,7 @@ def generate(song, model, pitch, vocal_gain, instrumental_gain, fmt, progress=gr
         progress(0.25,desc="Separating vocals"); vocals,instrumental=separate_vocals(wav,job)
         progress(0.6,desc="Converting voice"); converted=job/"converted.wav"; convert_voice(vocals,converted,model_path,int(pitch))
         progress(0.85,desc="Mixing"); output=job/"cover.wav"
+        converted=match_sample_rate(converted,instrumental,job/"converted_matched.wav")
         mix_audio(converted,instrumental,output,float(vocal_gain),float(instrumental_gain))
         if fmt=="MP3":
             from oneclick_cover.audio_utils import export_mp3

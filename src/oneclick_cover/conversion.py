@@ -47,6 +47,10 @@ def convert_voice(
         "0",
         "--overwrite",
     ]
+    # Remove any stale file so a backend that exits 0 without writing cannot pass the output check.
+    output_vocal.parent.mkdir(parents=True, exist_ok=True)
+    output_vocal.unlink(missing_ok=True)
+
     env = os.environ.copy()
     env.setdefault("HF_HUB_DISABLE_TELEMETRY", "1")
     result = subprocess.run(

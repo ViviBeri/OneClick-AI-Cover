@@ -223,3 +223,29 @@ def test_voice_model_validation_rejects_wrong_extension_and_tiny_file(tmp_path):
     tiny_model.write_bytes(b"partial")
     with pytest.raises(ValueError, match="suspiciously small"):
         validate_voice_model(tiny_model)
+
+
+def test_conversion_rejects_stale_output_when_backend_writes_nothing(monkeypatch, tmp_path):
+    backend = tmp_path / "rvc"
+    (backend / "infer").mkdir(parents=True)
+    (backend / "infer" / "cli.py").write_text("# test stub", encoding="utf-8")
+    python = backend / ".venv" / "Scripts" / "python.exe"
+    python.parent.mkdir(parents=True)
+    python.write_text("", encoding="utf-8")
+    model = tmp_path / "voice.pth"
+    model.write_bytes(b"model")
+    source = tmp_path / "vocal.wav"
+    source.write_bytes(b"audio")
+    output = tmp_path / "converted.wav"
+    output.write_bytes(b"stale output from an earlier run")
+
+    monkeypatch.setattr(conversion, "RVC_ROOT", backend)
+    monkeypatch.setattr(
+        conversion.subprocess, "run", lambda *a, **k: SimpleNamespace(returncode=0, stderr="", stdout="")
+    )
+    try:
+        conversion.convert_voice(source, output, model)
+    except RuntimeError as exc:
+        assert "did not create the converted vocal" in str(exc)
+    else:
+        raise AssertionError("A stale output file must not satisfy the output check")

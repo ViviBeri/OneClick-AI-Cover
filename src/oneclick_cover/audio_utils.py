@@ -66,6 +66,24 @@ def mix_audio(vocal_path: Path, instrumental_path: Path, output_path: Path, voca
     sf.write(str(output_path), mix, vocal_sr, subtype="PCM_16")
     _require_output_file(output_path, "Audio mix")
 
+def match_sample_rate(source: Path, reference: Path, destination: Path) -> Path:
+    """Return a WAV at the reference file's sample rate (RVC output often differs from Demucs output)."""
+    source_sr = sf.info(str(source)).samplerate
+    target_sr = sf.info(str(reference)).samplerate
+    if source_sr == target_sr:
+        return source
+    ffmpeg = _ffmpeg_path()
+    if not ffmpeg:
+        raise RuntimeError(
+            f"Converted vocal is {source_sr} Hz but the instrumental is {target_sr} Hz, and FFmpeg is needed to resample. "
+            "Re-run install.bat to install the managed FFmpeg helper."
+        )
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    _run([ffmpeg, "-y", "-i", str(source), "-ar", str(target_sr), "-ac", "2", str(destination)])
+    _require_output_file(destination, "Sample-rate conversion")
+    return destination
+
+
 def export_mp3(source: Path, destination: Path) -> None:
     destination.parent.mkdir(parents=True, exist_ok=True)
     ffmpeg = _ffmpeg_path()
