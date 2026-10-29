@@ -75,3 +75,32 @@ def test_generate_exports_mp3_when_requested(monkeypatch, tmp_path):
     assert output_path.suffix.lower() == ".mp3"
     assert output_path.is_file() and output_path.stat().st_size > 0
     assert "Saved:" in status
+
+
+def test_generate_resamples_48k_rvc_output_before_mixing(monkeypatch, tmp_path):
+    from oneclick_cover.audio_utils import _ffmpeg_path
+
+    if not _ffmpeg_path():
+        pytest.skip("FFmpeg not available")
+
+    source, model = _prepare_fake_pipeline(monkeypatch, tmp_path)
+
+    def fake_convert_48k(input_vocal, output_vocal, model_path, pitch=0):
+        output_vocal = Path(output_vocal)
+        output_vocal.parent.mkdir(parents=True, exist_ok=True)
+        sf.write(
+            str(output_vocal),
+            np.full((24000, 2), 0.05, dtype=np.float32),
+            48000,
+        )
+
+    monkeypatch.setattr(app, "convert_voice", fake_convert_48k)
+
+    output, status = app.generate(
+        str(source), model.name, 0, 1.0, 0.85, "WAV"
+    )
+
+    audio, sample_rate = sf.read(output, dtype="float32", always_2d=True)
+    assert sample_rate == 44100
+    assert audio.shape == (22050, 2)
+    assert "Saved:" in status
