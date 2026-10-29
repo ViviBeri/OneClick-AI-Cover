@@ -22,7 +22,7 @@ text{font-family:Inter,Segoe UI,Arial,sans-serif}.float{transform-box:fill-box;t
 <path d="M0 425L400 520H0Z" fill="#f59e0b" opacity=".08"/><path d="M800 0L1200 0V280Z" fill="#6366f1" opacity=".08"/>
 <rect x="58" y="56" width="7" height="400" rx="4" fill="url(#gold)"/>
 <text x="88" y="91" fill="#fcd34d" font-size="15" font-weight="700" letter-spacing="4">LOCAL AI AUDIO STUDIO</text>
-<text x="86" y="163" fill="#f8fafc" font-size="49" font-weight="800">OneClick</text><text x="86" y="218" fill="#f8fafc" font-size="49" font-weight="800">AI Cover<span fill="#fbbf24">.</span></text>
+<text x="86" y="163" fill="#f8fafc" font-size="49" font-weight="800">OneClick</text><text x="86" y="218" fill="#f8fafc" font-size="49" font-weight="800">AI Cover.</text>
 <text x="89" y="260" fill="#c4cde1" font-size="19">Your audio. Your workflow. On your machine.</text>
 <g transform="translate(88 298)"><rect width="120" height="34" rx="17" fill="#f59e0b" fill-opacity=".13" stroke="#fbbf24" stroke-opacity=".65"/><text x="60" y="22" fill="#fde68a" text-anchor="middle" font-size="12" font-weight="700">LOCAL-FIRST</text><rect x="132" width="106" height="34" rx="17" fill="#22d3ee" fill-opacity=".1" stroke="#67e8f9" stroke-opacity=".6"/><text x="185" y="22" fill="#a5f3fc" text-anchor="middle" font-size="12" font-weight="700">OPEN SOURCE</text></g>
 <text x="89" y="389" fill="#9aa9c6" font-size="14">SEPARATE  →  CONVERT  →  MIX  →  EXPORT</text>
