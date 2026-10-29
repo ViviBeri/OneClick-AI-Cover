@@ -1,10 +1,12 @@
 # Verification status and clean-machine test plan
 
+This document defines evidence required before calling a manual verification step **PASS**. A CI success is not a substitute for any manual test below. Use [`verification-results/TEMPLATE.md`](../verification-results/TEMPLATE.md) for each test run and attach sanitized evidence to the relevant issue.
+
 ## Current verified scope
 
-The repository has automated unit tests and a Windows GitHub Actions workflow. The Windows workflow now also checks key dependency imports and attempts to launch the Gradio app as a local HTTP service, then verifies that the page responds with the expected application title.
+The repository has automated unit tests and a Windows GitHub Actions workflow. The Windows workflow checks key dependency imports and attempts to launch the Gradio app as a local HTTP service, then verifies that the page responds with the expected application title.
 
-**This is CI smoke coverage, not a clean-machine installer certification.** GitHub-hosted runners do not reproduce every Windows 10 version, hardware limit, network condition, or large model download. A passing CI run does not prove that Demucs separation, RVC inference, MP3 export, or voice training succeeds end-to-end.
+**This is CI smoke coverage, not a clean-machine installer certification.** GitHub-hosted runners do not reproduce every Windows version, hardware limit, network condition, proxy, or large model download. A passing CI run does not prove that Demucs separation, RVC inference, MP3 export, or voice training succeeds end-to-end.
 
 ## CI smoke test
 
@@ -18,44 +20,141 @@ The workflow tests Python 3.10 and 3.11 on Windows and runs:
 6. Run `python scripts/check_installer_contract.py` to check that the installer and launcher still agree on the managed Python versions, pinned RVC revision, required RVC entry points, and explicit failure paths. This is a static check and does not run the installer.
 7. Check that the Windows setup files and this guide exist.
 
-Review the [Windows Checks workflow](../.github/workflows/windows-checks.yml) and the latest [GitHub Actions runs](https://github.com/ViviBeri/OneClick-AI-Cover/actions).
+Review the [Windows Checks workflow](../.github/workflows/windows-checks.yml) and [GitHub Actions runs](https://github.com/ViviBeri/OneClick-AI-Cover/actions).
 
 ## Manual clean-machine test plan
 
-Use a fresh Windows 10/11 x64 virtual machine or physical machine with no Python installed. Record the exact Windows build, CPU, RAM, available disk space, and network type.
+### Section 1 — Test environment and prerequisites
 
-1. Download a ZIP from the repository's main branch and extract it into a writable folder.
-2. Confirm there is no preinstalled Python dependency, then run `install.bat` as a standard user.
-3. Save the complete installer output. Note download sizes, duration, disk space, warnings, and the first failure if any.
-4. Run `run.bat`; confirm the app opens at its local address and that no public sharing/tunnel is created.
-5. Confirm the voice-model list can refresh with no models present and that invalid file selections produce understandable errors.
-6. Test **Prepare Voice Recordings** with a short recording you own or have permission to use. Confirm that the output dataset is local and contains mono WAV files.
-7. Test MP3-to-WAV conversion and MP3 export using a short, rights-cleared audio fixture. Confirm the managed FFmpeg fallback works on a machine without system FFmpeg.
-8. With a compatible RVC model and a short audio file you are authorized to process, run a complete cover: input conversion → Demucs separation → RVC conversion → mixing → WAV export. Then repeat with MP3 export.
-9. Save the resulting logs, exact command/output, timings, and whether each stage passed. Do not commit recordings, voice models, generated audio, credentials, or unredacted private paths.
-10. Repeat after a clean reboot. Record whether install and launch work from a non-administrator account.
+Use a fresh Windows 10/11 x64 virtual machine or physical machine with no Python installed. A fresh VM counts; testers do not need spare physical hardware. Record Windows edition/version/build, CPU architecture, CPU, RAM, free disk space, GPU/driver if applicable, and network type/restrictions.
+
+**Windows Sandbox option:** On supported Windows 10/11 Pro, Enterprise, or Education editions, enable **Windows Sandbox** in “Turn Windows features on or off,” restart if requested, and launch Windows Sandbox from Start. Copy the project ZIP into the sandbox and run the checks there. Sandbox changes are discarded when it closes, so save the test report and logs outside it before closing. Availability depends on Windows edition, virtualization support, and device policy.
+
+**Hyper-V / VM option:** Use an isolated fresh Windows VM if Sandbox is unavailable. A new VM snapshot with no Python installed is acceptable. Do not use a work device or VM in a way that violates organization policy.
+
+**Pass criteria:** The report records the environment fields above, and the tester confirms Python was not installed before the test. Otherwise mark BLOCKED, not PASS.
+
+### Section 2 — Download and integrity check
+
+Download the exact ZIP or installer being tested and record its source URL, filename, file size, and SHA-256. In PowerShell, run:
+
+```powershell
+Get-FileHash .\OneClick-AI-Cover.zip -Algorithm SHA256
+```
+
+Replace the path with the actual downloaded filename. If a versioned release later publishes an official checksum, compare the calculated hash with that release value and mark the comparison PASS only if they match. Until an official checksum is published, the calculated value is evidence identifying the tested file, **not proof of publisher authenticity**.
+
+For a signed installer, verify the signature from PowerShell with `Get-AuthenticodeSignature .\installer.exe` and, where Windows SDK SignTool is available, run:
+
+```powershell
+signtool verify /pa /v .\installer.exe
+```
+
+**Pass criteria:** Download source and SHA-256 are recorded; any published checksum matches exactly. If the artifact is unsigned or no official checksum exists, record NOT AVAILABLE rather than PASS for signature/publisher verification.
+
+### Section 3 — Install and first launch
+
+1. Extract the ZIP to a writable path containing spaces, e.g. `C:\Users\Test User\OneClick Cover Test\`. If practical, repeat with non-ASCII characters in the path.
+2. Run `install.bat` as a **standard non-administrator user**. Do not elevate unless a failure is being investigated.
+3. Save the complete console output and record start/end time, network conditions, warnings, and first failure.
+4. Launch with `run.bat`. Confirm the local Gradio interface loads at its local address and does not create public sharing or a tunnel.
+5. Confirm the app can start again after a clean reboot.
+
+**Pass criteria:** Installation exits successfully, required managed runtime/dependencies are present, the UI loads locally within 60 seconds after `run.bat` starts (excluding first-time install/download time), no administrator privilege is required for the documented path, and logs contain no unhandled startup error. If a different threshold is required by the environment, record the measured time and reason; do not silently change the threshold.
+
+Record any Microsoft Defender SmartScreen warning exactly. Do not advise contributors to bypass organizational security policy. If a warning blocks execution, mark the result BLOCKED/FAIL as appropriate and attach a screenshot with personal information redacted.
+
+### Section 4 — Architecture and Windows-specific compatibility
+
+Run the install/launch checks on Windows 10 and Windows 11 where available. Record the actual architecture: x64 or ARM64. Do not assume x64 dependencies work on ARM64.
+
+Check the following:
+- [ ] Standard (non-admin) account can install and launch.
+- [ ] Path with spaces works.
+- [ ] Non-ASCII path works, or the limitation is documented.
+- [ ] SmartScreen behavior is recorded; no undocumented bypass is required.
+- [ ] Missing Visual C++ runtime behavior is recorded. If a dependency requires the Microsoft Visual C++ Redistributable, the error must identify the missing prerequisite or provide a documented, legitimate install route.
+- [ ] ARM64 tested, or explicitly marked NOT TESTED/unsupported. Do not report ARM64 as passed based on x64 results.
+
+**Pass criteria:** Every item is PASS, FAIL, or NOT TESTED with a note. A platform not tested must never be described as verified.
+
+### Section 5 — Managed FFmpeg success and failure modes
+
+First confirm system FFmpeg is not on PATH (for example, `where.exe ffmpeg` returns no executable), so the managed fallback is genuinely tested. Use a short test audio file that you own or have permission to use.
+
+| Test | Expected result / pass criterion |
+|---|---|
+| MP3 import/conversion to WAV | Output exists, is non-empty, opens in an audio probe/player, and duration is plausible. |
+| WAV export to MP3 | Output exists, is non-empty, can be reopened/probed, and has plausible duration. |
+| No network during first managed FFmpeg download | App reports a clear actionable error; no unhandled traceback or false success. If FFmpeg is already cached, repeat with its cache temporarily unavailable. |
+| Corporate proxy / restricted network | Failure is understandable and logged; app does not hang indefinitely or claim FFmpeg is ready when it is not. Record proxy policy without secrets. |
+| Insufficient disk space | Safely simulate only in a disposable VM/test volume. Operation fails clearly; no success status for a missing/truncated output. |
+| Corrupted or partial FFmpeg download | In a disposable test environment, interrupt a download or corrupt only the test cache. App detects/retries or reports a clear error; it must not execute a truncated binary or silently accept it. |
+| Invalid or unsupported input | User sees a readable validation error; the app remains usable. |
+
+Do not deliberately fill a production drive. Record which failures could not be safely reproduced as NOT TESTED.
+
+**Pass criteria:** Both normal conversions work without system FFmpeg, and each tested failure mode degrades gracefully with a readable message, a useful sanitized log, and no false success. A failure mode not exercised is NOT TESTED, not PASS.
+
+### Section 6 — Uninstall verification
+
+This project currently uses a ZIP + batch-file setup rather than a verified MSI/EXE installer. Record the actual cleanup steps; do not claim a formal uninstaller exists unless one is added.
+
+1. Close the app and any related Python/RVC/FFmpeg processes.
+2. Remove the extracted project folder and any app-managed runtime/cache folders created by the setup, using only paths confirmed to belong to this test installation.
+3. Inspect `%APPDATA%`, `%LOCALAPPDATA%`, and `%TEMP%` for folders/files created by this test. Do not delete unrelated user data.
+4. Check Task Manager for orphaned processes.
+5. Check installed-app entries and registry only if the test actually created any. Do not edit/delete registry keys speculatively.
+6. Reboot and repeat the process check.
+
+**Pass criteria:** No project-created background process remains; all documented app-managed files are removed by the documented cleanup procedure; any retained logs/models/output are explicitly documented as user data. Report unexpected leftovers with exact path redacted as needed. Registry cleanup is N/A if the app did not create registry entries.
+
+### Section 7 — Complete end-to-end conversion
+
+With a compatible RVC model and a short audio file you are authorized to process:
+
+1. Convert/import the input.
+2. Run Demucs separation.
+3. Run RVC inference.
+4. Mix converted vocals with the instrumental.
+5. Export WAV.
+6. Export MP3.
+7. Reopen/probe both outputs and compare their duration with the input.
+8. Save sanitized logs and per-stage timings.
+
+**Pass criteria:** Each stage completes without an unhandled error; both output files exist, are non-empty and playable/probeable; output duration is plausible relative to the source; the report records model/backend versions and the result of every stage. A successful UI launch alone is not an end-to-end pass.
+
+### Section 8 — Share evidence and final result
+
+Attach the completed [results template](../verification-results/TEMPLATE.md) to the relevant issue, along with sanitized logs, screenshots, output-file metadata, and ffprobe output where relevant. Do not upload copyrighted audio, voice recordings, voice models, generated audio, credentials, tokens, or unredacted private paths.
+
+Use only **PASS**, **FAIL**, **BLOCKED**, or **NOT TESTED** per check. Overall PASS is allowed only when all criteria required by that issue pass. Otherwise use FAIL/BLOCKED and state the first reproducible failure.
+
+### Verified issue closure record
+
+When closing a verification issue, add a closing comment with:
+- Tester and date (UTC)
+- Windows edition/version/build and architecture
+- Installer/ZIP filename and SHA-256
+- Exact sections/checks completed and PASS/FAIL/BLOCKED/NOT TESTED results
+- Artifact links (sanitized logs, screenshots, ffprobe output; no private media/model files)
+- Known limitations and any follow-up issue
+
+A `verified` label should be applied only after evidence meets the acceptance criteria. Closing an issue without the record does not establish what was tested.
 
 ## Results template
 
-Copy this into a test report when a real machine run is completed:
+Copy [`verification-results/TEMPLATE.md`](../verification-results/TEMPLATE.md) for each run. The template includes a compact checkbox table and fields suitable for later aggregation.
 
-- Date:
-- Tester / Windows version and build:
-- CPU / RAM / GPU:
-- Free disk space before install:
-- Internet type / restrictions:
-- Install result and duration:
-- App launch result:
-- Dependency import result:
-- Recording preparation result:
-- Managed FFmpeg import/export result:
-- Demucs separation result:
-- RVC conversion result (model version and authorized test asset, no private files attached):
-- Mixing and WAV export result:
-- MP3 export result:
-- Logs / sanitized error excerpts:
-- Overall result: PASS / FAIL / BLOCKED
+## Known issues / current limitations
+
+- No published signed installer release artifact or official release SHA-256 is available yet.
+- Clean-machine installation and formal uninstall behavior are not yet verified.
+- Windows ARM64 is not claimed as supported or verified.
+- The CI installer-contract check is static; it does not execute `install.bat`.
+- Full Demucs → RVC → mixing → export has not yet been recorded as a verified end-to-end run.
+- Corporate proxy, offline first-run, corrupted download, and low-disk-space FFmpeg failure modes require manual validation.
 
 ## Current status
 
-No physical clean-machine test result has been recorded in this repository yet. The full end-to-end workflow must remain marked pending until a tester records successful results. Do not change the README status banner to "verified" based only on CI.
+No physical clean-machine test result has been recorded in this repository yet. The full end-to-end workflow must remain marked pending until a tester records successful results. Do not change the README status banner to “verified” based only on CI.
