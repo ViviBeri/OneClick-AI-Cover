@@ -95,12 +95,15 @@ def test_mix_audio_rejects_sample_rate_mismatch(tmp_path):
     sf.write(vocal, [0.1, 0.2], 22050)
     sf.write(instrumental, [0.1, 0.2], 44100)
 
+    output = tmp_path / "mix.wav"
     try:
-        audio_utils.mix_audio(vocal, instrumental, tmp_path / "mix.wav")
+        audio_utils.mix_audio(vocal, instrumental, output)
     except RuntimeError as exc:
         assert "Sample-rate mismatch" in str(exc)
     else:
         raise AssertionError("Expected sample-rate mismatch to fail clearly")
+
+    assert not output.exists(), "A rejected mix must not leave a misleading output file"
 
 
 def test_transcode_fallback_reads_wav_without_ffmpeg(monkeypatch, tmp_path):
