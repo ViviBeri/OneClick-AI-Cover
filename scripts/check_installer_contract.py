@@ -43,6 +43,9 @@ require(installer.count("$ErrorActionPreference='Stop'") >= 2,
 require('if errorlevel 1 goto failed' in installer.lower(),
         "installer has explicit failure handling after setup commands")
 require(':failed' in installer.lower(), "installer has a failure exit path")
+require('SETUP_STAGE=' in installer, "installer tracks the current setup stage for diagnostics")
+require('SETUP FAILED during:' in installer, "installer reports which setup stage failed")
+require('docs/troubleshooting.md' in installer, "installer links to troubleshooting guidance on failure")
 require(re.search(r'requires-python\s*=\s*">=3\.10,<3\.12"', project) is not None,
         "project Python range matches the main app environment")
 require('.venv\\Scripts\\python.exe' in launcher and 'app.py' in launcher,
