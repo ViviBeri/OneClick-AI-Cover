@@ -60,21 +60,31 @@ def prepare_recordings(
             raise ValueError(f"Recording is empty: {source.name}")
         valid.append(source)
     target.mkdir(parents=True, exist_ok=True)
-    # Reusing a dataset name must not leave recordings from an older, larger
-    # selection in the training set. Remove only files created by this helper.
-    for previous_output in target.glob("recording_*.wav"):
-        if previous_output.is_file():
-            previous_output.unlink()
-    count = 0
-    for index, source in enumerate(valid, start=1):
-        output = target / f"recording_{index:03d}.wav"
-        command = [
-            ffmpeg, "-nostdin", "-y", "-i", str(source), "-vn",
-            "-ac", "1", "-ar", "44100", "-c:a", "pcm_s16le", str(output)
-        ]
-        result = subprocess.run(command, capture_output=True, text=True, check=False)
-        if result.returncode or not output.exists() or output.stat().st_size == 0:
-            detail = (result.stderr or result.stdout or "No FFmpeg diagnostic output")[-2000:]
-            raise RuntimeError(f"Could not convert {source.name}.\n{detail}")
-        count += 1
+    # Convert into a staging directory first. Keep the previous dataset intact
+    # if any recording fails to decode or convert.
+    import tempfile
+
+    with tempfile.TemporaryDirectory(prefix=".preparing-", dir=target) as staging_name:
+        staging = Path(staging_name)
+        count = 0
+        for index, source in enumerate(valid, start=1):
+            output = staging / f"recording_{index:03d}.wav"
+            command = [
+                ffmpeg, "-nostdin", "-y", "-i", str(source), "-vn",
+                "-ac", "1", "-ar", "44100", "-c:a", "pcm_s16le", str(output)
+            ]
+            result = subprocess.run(command, capture_output=True, text=True, check=False)
+            if result.returncode or not output.exists() or output.stat().st_size == 0:
+                detail = (result.stderr or result.stdout or "No FFmpeg diagnostic output")[-2000:]
+                raise RuntimeError(f"Could not convert {source.name}.\\n{detail}")
+            count += 1
+
+        # Replace only files owned by this helper, and only after every input
+        # converted successfully. Unrelated user files remain untouched.
+        for previous_output in target.glob("recording_*.wav"):
+            if previous_output.is_file():
+                previous_output.unlink()
+        for staged_output in sorted(staging.glob("recording_*.wav")):
+            shutil.move(str(staged_output), str(target / staged_output.name))
+
     return target, count
