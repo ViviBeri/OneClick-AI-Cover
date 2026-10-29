@@ -298,3 +298,19 @@ def test_resample_removes_stale_destination_before_failed_ffmpeg(monkeypatch, tm
         audio_utils.match_sample_rate(source, reference, destination)
 
     assert not destination.exists()
+
+def test_resample_removes_stale_destination_when_ffmpeg_unavailable(monkeypatch, tmp_path):
+    import pytest
+
+    source = tmp_path / "converted.wav"
+    reference = tmp_path / "instrumental.wav"
+    destination = tmp_path / "matched.wav"
+    sf.write(source, [0.1, -0.1, 0.2], 48000)
+    sf.write(reference, [0.1, -0.1, 0.2], 44100)
+    destination.write_bytes(b"stale resampled audio")
+    monkeypatch.setattr(audio_utils, "_ffmpeg_path", lambda: None)
+
+    with pytest.raises(RuntimeError, match="FFmpeg is needed to resample"):
+        audio_utils.match_sample_rate(source, reference, destination)
+
+    assert not destination.exists()
