@@ -50,7 +50,7 @@ def test_mp3_export_explains_missing_ffmpeg(monkeypatch, tmp_path):
 def test_transcode_creates_destination_directory_before_ffmpeg(monkeypatch, tmp_path):
     commands = []
     monkeypatch.setattr(audio_utils, "_ffmpeg_path", lambda: "managed-ffmpeg.exe")
-    monkeypatch.setattr(audio_utils, "_run", lambda command: commands.append(command))
+    monkeypatch.setattr(audio_utils, "_run", lambda command: (commands.append(command), Path(command[-1]).write_bytes(b"output"))[0])
 
     source = tmp_path / "input.mp3"
     destination = tmp_path / "nested" / "folder" / "output.wav"
