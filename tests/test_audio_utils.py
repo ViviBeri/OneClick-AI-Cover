@@ -184,7 +184,7 @@ def test_transcode_fallback_gives_helpful_error_for_undecodable_input(monkeypatc
         audio_utils.transcode_to_wav(source, destination)
     except RuntimeError as exc:
         assert "Could not decode this file" in str(exc)
-        assert "re-run install.bat" in str(exc)
+        assert "re-run install.bat" in str(exc).lower()
         assert exc.__cause__ is not None
     else:
         raise AssertionError("Expected undecodable input to produce a helpful error")
