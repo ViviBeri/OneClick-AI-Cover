@@ -36,3 +36,18 @@ def test_match_sample_rate_resamples_48k_vocal_to_44k_instrumental(tmp_path):
     result = match_sample_rate(vocal, inst, out)
     assert result == out and sf.info(str(out)).samplerate == 44100
     mix_audio(result, inst, tmp_path / "mix.wav")  # previously raised a sample-rate mismatch
+
+def test_mix_accepts_mono_converted_vocal_at_matching_sample_rate(tmp_path):
+    vocal = tmp_path / "mono_vocal.wav"
+    instrumental = tmp_path / "stereo_instrumental.wav"
+    output = tmp_path / "mix.wav"
+    sr = 44100
+    sf.write(vocal, np.full(sr, 0.1, dtype=np.float32), sr)
+    sf.write(instrumental, np.zeros((sr, 2), dtype=np.float32), sr)
+
+    mix_audio(vocal, instrumental, output)
+
+    result, result_sr = sf.read(output, dtype="float32", always_2d=True)
+    assert result_sr == sr
+    assert result.shape == (sr, 2)
+    assert np.isfinite(result).all()
