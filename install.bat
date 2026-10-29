@@ -64,7 +64,8 @@ if not exist "%RVC_DIR%\.runtime-ready-py312" (
     echo ERROR: RVC CPU requirements file was not found in the downloaded backend.
     goto failed
   )
-  "%UV_EXE%" pip install --python "%RVC_DIR%\.venv\Scripts\python.exe" -r "%RVC_DIR%\requirments_cpu_py312.txt"
+  rem Search all configured package indexes so CPU-only PyTorch mirrors do not hide ordinary PyPI packages.
+  "%UV_EXE%" pip install --index-strategy unsafe-best-match --python "%RVC_DIR%\.venv\Scripts\python.exe" -r "%RVC_DIR%\requirments_cpu_py312.txt"
   if errorlevel 1 goto failed
   echo ready>"%RVC_DIR%\.runtime-ready-py312"
 )
@@ -83,6 +84,7 @@ echo Keep this window open and save the last error lines above.
 echo Check internet access, free disk space, and security software download restrictions.
 echo If the error mentions SSL/TLS, check Windows date/time and retry on an unrestricted network.
 echo This installer requires HTTPS with TLS 1.2 support.
+echo If dependency resolution fails, check configured Python package mirrors and retry.
 echo Troubleshooting guide: https://github.com/ViviBeri/OneClick-AI-Cover/blob/main/docs/troubleshooting.md
 echo Fix the reported issue, then run install.bat again.
 pause
