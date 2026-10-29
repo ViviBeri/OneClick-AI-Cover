@@ -209,3 +209,28 @@ def test_mix_audio_rejects_empty_vocal_or_instrumental(tmp_path):
     with pytest.raises(RuntimeError, match="Audio file contains no samples"):
         audio_utils.mix_audio(vocal, instrumental, tmp_path / "mix.wav")
 
+
+def test_mix_audio_pads_shorter_track_and_applies_gains(tmp_path):
+    import numpy as np
+
+    vocal = tmp_path / "vocal.wav"
+    instrumental = tmp_path / "instrumental.wav"
+    output = tmp_path / "mix.wav"
+    sr = 22050
+    sf.write(vocal, [0.2, 0.4, 0.6], sr, subtype="FLOAT")
+    sf.write(instrumental, [0.1], sr, subtype="FLOAT")
+
+    audio_utils.mix_audio(
+        vocal,
+        instrumental,
+        output,
+        vocal_gain=0.5,
+        instrumental_gain=0.25,
+    )
+
+    mixed, out_sr = sf.read(output, dtype="float32")
+    expected = np.array([0.125, 0.2, 0.3], dtype="float32")
+    assert out_sr == sr
+    assert len(mixed) == 3
+    assert np.allclose(mixed, expected, atol=1 / 32768)
+
