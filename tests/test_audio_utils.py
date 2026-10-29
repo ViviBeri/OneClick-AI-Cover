@@ -276,3 +276,25 @@ def test_mp3_export_removes_stale_output_before_failed_ffmpeg(monkeypatch, tmp_p
         raise AssertionError("Expected FFmpeg failure to propagate")
 
     assert not destination.exists()
+
+def test_resample_removes_stale_destination_before_failed_ffmpeg(monkeypatch, tmp_path):
+    import pytest
+
+    source = tmp_path / "converted.wav"
+    reference = tmp_path / "instrumental.wav"
+    destination = tmp_path / "matched.wav"
+    sf.write(source, [0.1, -0.1, 0.2], 48000)
+    sf.write(reference, [0.1, -0.1, 0.2], 44100)
+    destination.write_bytes(b"stale resampled audio")
+
+    monkeypatch.setattr(audio_utils, "_ffmpeg_path", lambda: "managed-ffmpeg.exe")
+
+    def fail_ffmpeg(command):
+        raise RuntimeError("synthetic resampling failure")
+
+    monkeypatch.setattr(audio_utils, "_run", fail_ffmpeg)
+
+    with pytest.raises(RuntimeError, match="synthetic resampling failure"):
+        audio_utils.match_sample_rate(source, reference, destination)
+
+    assert not destination.exists()
