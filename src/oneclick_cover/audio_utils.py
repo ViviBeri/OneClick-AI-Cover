@@ -74,14 +74,14 @@ def match_sample_rate(source: Path, reference: Path, destination: Path) -> Path:
     target_sr = sf.info(str(reference)).samplerate
     if source_sr == target_sr:
         return source
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    destination.unlink(missing_ok=True)
     ffmpeg = _ffmpeg_path()
     if not ffmpeg:
         raise RuntimeError(
             f"Converted vocal is {source_sr} Hz but the instrumental is {target_sr} Hz, and FFmpeg is needed to resample. "
             "Re-run install.bat to install the managed FFmpeg helper."
         )
-    destination.parent.mkdir(parents=True, exist_ok=True)
-    destination.unlink(missing_ok=True)
     _run([ffmpeg, "-y", "-i", str(source), "-ar", str(target_sr), "-ac", "2", str(destination)])
     _require_output_file(destination, "Sample-rate conversion")
     return destination
