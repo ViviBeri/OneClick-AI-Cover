@@ -231,6 +231,7 @@ def test_mix_audio_pads_shorter_track_and_applies_gains(tmp_path):
     mixed, out_sr = sf.read(output, dtype="float32")
     expected = np.array([0.125, 0.2, 0.3], dtype="float32")
     assert out_sr == sr
-    assert len(mixed) == 3
-    assert np.allclose(mixed, expected, atol=1 / 32768)
+    assert mixed.shape == (3, 2)
+    assert np.allclose(mixed[:, 0], expected, atol=1 / 32768)
+    assert np.allclose(mixed[:, 1], expected, atol=1 / 32768)
 
