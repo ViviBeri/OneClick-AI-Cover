@@ -155,3 +155,71 @@ def test_conversion_rejects_missing_voice_model_before_subprocess(monkeypatch, t
         assert "Voice model file does not exist" in str(exc)
     else:
         raise AssertionError("Expected a clear error when the voice model is missing")
+
+
+
+def test_audio_validation_accepts_supported_nonempty_files(tmp_path):
+    from oneclick_cover.validation import validate_audio_file
+
+    for suffix in (".mp3", ".wav", ".flac", ".MP3", ".WAV"):
+        audio = tmp_path / f"song{suffix}"
+        audio.write_bytes(b"nonempty fixture")
+        validate_audio_file(audio)
+
+
+def test_audio_validation_rejects_missing_file_and_directory(tmp_path):
+    import pytest
+    from oneclick_cover.validation import validate_audio_file
+
+    with pytest.raises(ValueError, match="does not exist"):
+        validate_audio_file(tmp_path / "missing.wav")
+    with pytest.raises(ValueError, match="does not exist"):
+        validate_audio_file(tmp_path)
+
+
+def test_audio_validation_rejects_unsupported_extension_and_empty_file(tmp_path):
+    import pytest
+    from oneclick_cover.validation import validate_audio_file
+
+    unsupported = tmp_path / "song.m4a"
+    unsupported.write_bytes(b"audio")
+    with pytest.raises(ValueError, match="Unsupported audio format"):
+        validate_audio_file(unsupported)
+
+    empty = tmp_path / "empty.wav"
+    empty.touch()
+    with pytest.raises(ValueError, match="empty"):
+        validate_audio_file(empty)
+
+
+def test_voice_model_validation_accepts_nontrivial_pth_file(tmp_path):
+    from oneclick_cover.validation import validate_voice_model
+
+    model = tmp_path / "voice.pth"
+    model.write_bytes(b"x" * 1024)
+    validate_voice_model(model)
+
+
+def test_voice_model_validation_rejects_missing_model_and_directory(tmp_path):
+    import pytest
+    from oneclick_cover.validation import validate_voice_model
+
+    with pytest.raises(ValueError, match="Voice model not found"):
+        validate_voice_model(tmp_path / "missing.pth")
+    with pytest.raises(ValueError, match="Voice model not found"):
+        validate_voice_model(tmp_path)
+
+
+def test_voice_model_validation_rejects_wrong_extension_and_tiny_file(tmp_path):
+    import pytest
+    from oneclick_cover.validation import validate_voice_model
+
+    wrong_type = tmp_path / "voice.bin"
+    wrong_type.write_bytes(b"x" * 2048)
+    with pytest.raises(ValueError, match="must be a .pth"):
+        validate_voice_model(wrong_type)
+
+    tiny_model = tmp_path / "partial.pth"
+    tiny_model.write_bytes(b"partial")
+    with pytest.raises(ValueError, match="suspiciously small"):
+        validate_voice_model(tiny_model)
