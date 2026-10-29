@@ -18,6 +18,8 @@ Free, open-source, Windows-first local AI singing-cover creator. Separate vocals
 
 CI status badge: ![Windows Checks](https://github.com/ViviBeri/OneClick-AI-Cover/actions/workflows/windows-checks.yml/badge.svg)
 
+Automated regression coverage includes sample-rate matching (including 48 kHz-to-44.1 kHz resampling when FFmpeg is available), mono-vocal mixing, stale/invalid RVC output rejection, and mocked application-pipeline tests for WAV and optional MP3 output. The mocked pipeline tests exercise orchestration with simulated Demucs/RVC stages; they **do not** prove real model inference or end-to-end audio quality. Check the linked Actions runs for the status of the latest commit.
+
 **Important:** a green CI run is not a clean-machine installation test. See [the detailed verification plan](docs/verification.md) and copyable [verification-results template](verification-results/TEMPLATE.md). Do not describe an item as verified until the specified acceptance criteria and evidence are recorded.
 
 ### Installer integrity / SHA-256
@@ -80,6 +82,8 @@ No voice models or copyrighted songs are bundled. Third-party dependencies and m
 - [x] Add legal/ethical boundaries and community issue guidance
 - [x] Add a guarded Kaggle GPU/backend preflight notebook
 - [x] Add Windows CI checks for core imports and local Gradio startup
+- [x] Add regression tests for sample-rate mismatch, mono-vocal mixing, and invalid/stale RVC output
+- [x] Add mocked pipeline tests for WAV output and optional MP3 export
 - [ ] Build and verify private Kaggle training, checkpoint export, and model download
 - [ ] Profile CPU/GPU and memory behavior
 - [x] Add an experimental launcher for the upstream RVC training UI
