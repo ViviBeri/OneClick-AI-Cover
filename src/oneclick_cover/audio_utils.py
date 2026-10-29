@@ -54,6 +54,9 @@ def _read_stereo(path: Path):
     return audio, sr
 
 def mix_audio(vocal_path: Path, instrumental_path: Path, output_path: Path, vocal_gain: float = 1.0, instrumental_gain: float = 0.85) -> None:
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    # A failed mix must not leave a previous result looking current.
+    output_path.unlink(missing_ok=True)
     vocal, vocal_sr = _read_stereo(vocal_path)
     instrumental, instrumental_sr = _read_stereo(instrumental_path)
     if vocal_sr != instrumental_sr: raise RuntimeError(f"Sample-rate mismatch: vocals={vocal_sr}, instrumental={instrumental_sr}.")
@@ -64,7 +67,6 @@ def mix_audio(vocal_path: Path, instrumental_path: Path, output_path: Path, voca
     mix = pad(vocal) * vocal_gain + pad(instrumental) * instrumental_gain
     peak = float(np.max(np.abs(mix))) if mix.size else 0.0
     if peak > 0.99: mix *= 0.99 / peak
-    output_path.parent.mkdir(parents=True, exist_ok=True)
     sf.write(str(output_path), mix, vocal_sr, subtype="PCM_16")
     _require_output_file(output_path, "Audio mix")
 
