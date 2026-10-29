@@ -49,6 +49,8 @@ def _read_stereo(path: Path):
     audio, sr = sf.read(str(path), dtype="float32", always_2d=True)
     if audio.shape[0] == 0:
         raise RuntimeError(f"Audio file contains no samples: {path}")
+    if not np.isfinite(audio).all():
+        raise RuntimeError(f"Audio file contains invalid non-finite samples: {path}")
     if audio.shape[1] == 1: audio = np.repeat(audio, 2, axis=1)
     elif audio.shape[1] > 2: audio = audio[:, :2]
     return audio, sr
@@ -57,6 +59,10 @@ def mix_audio(vocal_path: Path, instrumental_path: Path, output_path: Path, voca
     output_path.parent.mkdir(parents=True, exist_ok=True)
     # A failed mix must not leave a previous result looking current.
     output_path.unlink(missing_ok=True)
+    if not np.isfinite([vocal_gain, instrumental_gain]).all():
+        raise ValueError("Audio gains must be finite numbers.")
+    if vocal_gain < 0 or instrumental_gain < 0:
+        raise ValueError("Audio gains cannot be negative.")
     vocal, vocal_sr = _read_stereo(vocal_path)
     instrumental, instrumental_sr = _read_stereo(instrumental_path)
     if vocal_sr != instrumental_sr: raise RuntimeError(f"Sample-rate mismatch: vocals={vocal_sr}, instrumental={instrumental_sr}.")
