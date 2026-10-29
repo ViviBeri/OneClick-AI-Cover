@@ -4,6 +4,8 @@ import os
 import subprocess
 from pathlib import Path
 
+import soundfile as sf
+
 from oneclick_cover.settings import RVC_ROOT
 
 
@@ -72,3 +74,14 @@ def convert_voice(
         raise RuntimeError(
             "RVC exited successfully but did not create the converted vocal file."
         )
+
+    # A non-empty file can still be stale, truncated, or not audio at all.
+    try:
+        info = sf.info(str(output_vocal))
+        if info.frames <= 0 or info.samplerate <= 0 or info.channels <= 0:
+            raise RuntimeError("The converted audio has invalid stream metadata.")
+    except Exception as exc:
+        raise RuntimeError(
+            "RVC created an output file, but it is not a readable audio file. "
+            "Check the RVC backend logs and model compatibility."
+        ) from exc
