@@ -23,7 +23,7 @@ def test_transcode_uses_managed_ffmpeg_when_available(monkeypatch, tmp_path):
 def test_mp3_export_uses_managed_ffmpeg(monkeypatch, tmp_path):
     commands = []
     monkeypatch.setattr(audio_utils, "_ffmpeg_path", lambda: "managed-ffmpeg.exe")
-    monkeypatch.setattr(audio_utils, "_run", lambda command: commands.append(command))
+    monkeypatch.setattr(audio_utils, "_run", lambda command: (commands.append(command), Path(command[-1]).write_bytes(b"output"))[0])
 
     source = tmp_path / "input.wav"
     destination = tmp_path / "output.mp3"
