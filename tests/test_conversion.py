@@ -19,8 +19,11 @@ def test_conversion_disables_index_when_no_index_picker_exists(monkeypatch, tmp_
     captured = {}
 
     def fake_run(command, **kwargs):
+        import numpy as np
+        import soundfile as sf
+
         captured["command"] = command
-        output.write_bytes(b"converted")
+        sf.write(str(output), np.zeros((2205, 1), dtype=np.float32), 22050)
         return SimpleNamespace(returncode=0, stderr="", stdout="")
 
     monkeypatch.setattr(conversion, "RVC_ROOT", backend)
@@ -32,7 +35,7 @@ def test_conversion_disables_index_when_no_index_picker_exists(monkeypatch, tmp_
     index_rate = command.index("--index-rate")
     assert command[index_rate + 1] == "0"
     assert command[command.index("--pitch") + 1] == "2"
-    assert output.read_bytes() == b"converted"
+    import soundfile as sf\n    assert sf.info(str(output)).frames == 2205
 
 
 
@@ -249,3 +252,29 @@ def test_conversion_rejects_stale_output_when_backend_writes_nothing(monkeypatch
         assert "did not create the converted vocal" in str(exc)
     else:
         raise AssertionError("A stale output file must not satisfy the output check")
+
+
+def test_conversion_rejects_non_audio_output(monkeypatch, tmp_path):
+    backend = tmp_path / "rvc"
+    (backend / "infer").mkdir(parents=True)
+    (backend / "infer" / "cli.py").write_text("# test stub", encoding="utf-8")
+    python = backend / ".venv" / "Scripts" / "python.exe"
+    python.parent.mkdir(parents=True)
+    python.write_text("", encoding="utf-8")
+    model = tmp_path / "voice.pth"
+    model.write_bytes(b"model")
+    source = tmp_path / "vocal.wav"
+    source.write_bytes(b"audio")
+    output = tmp_path / "converted.wav"
+
+    monkeypatch.setattr(conversion, "RVC_ROOT", backend)
+
+    def fake_run(command, **kwargs):
+        output.write_bytes(b"not a valid audio file")
+        return SimpleNamespace(returncode=0, stderr="", stdout="")
+
+    monkeypatch.setattr(conversion.subprocess, "run", fake_run)
+
+    import pytest
+    with pytest.raises(RuntimeError, match="not a readable audio file"):
+        conversion.convert_voice(source, output, model)
