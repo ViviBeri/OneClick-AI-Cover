@@ -75,3 +75,33 @@ def test_reusing_dataset_name_removes_stale_generated_recordings(monkeypatch, tm
     assert count == 1
     assert sorted(p.name for p in target.glob("recording_*.wav")) == ["recording_001.wav"]
     assert user_file.read_text(encoding="utf-8") == "keep"
+
+
+def test_failed_replacement_preserves_existing_dataset(monkeypatch, tmp_path):
+    from types import SimpleNamespace
+    from oneclick_cover import dataset
+
+    source = tmp_path / "new_voice.wav"
+    source.write_bytes(b"input")
+    target = tmp_path / "datasets" / "MyVoice"
+    target.mkdir(parents=True)
+    previous = target / "recording_001.wav"
+    previous.write_bytes(b"previous good recording")
+    notes = target / "notes.txt"
+    notes.write_text("keep", encoding="utf-8")
+
+    monkeypatch.setattr(dataset, "_ffmpeg_path", lambda: "/tools/ffmpeg.exe")
+    monkeypatch.setattr(
+        dataset.subprocess,
+        "run",
+        lambda command, **kwargs: SimpleNamespace(
+            returncode=1, stderr="fixture conversion failed", stdout=""
+        ),
+    )
+
+    with pytest.raises(RuntimeError, match="fixture conversion failed"):
+        prepare_recordings([source], "MyVoice", tmp_path / "datasets")
+
+    assert previous.read_bytes() == b"previous good recording"
+    assert notes.read_text(encoding="utf-8") == "keep"
+    assert not list(target.glob(".preparing-*"))
