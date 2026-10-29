@@ -21,15 +21,21 @@ def _run(command: list[str]) -> None:
         detail = (result.stderr or result.stdout or "No diagnostic output")[-3500:]
         raise RuntimeError(f"Command failed ({result.returncode}): {' '.join(command[:4])}\n{detail}")
 
+def _require_output_file(path: Path, operation: str) -> None:
+    if not path.is_file() or path.stat().st_size == 0:
+        raise RuntimeError(f"{operation} completed without creating a non-empty output file: {path}")
+
 def transcode_to_wav(source: Path, destination: Path) -> None:
     destination.parent.mkdir(parents=True, exist_ok=True)
     ffmpeg = _ffmpeg_path()
     if ffmpeg:
         _run([ffmpeg, "-y", "-i", str(source), "-vn", "-ac", "2", "-ar", "44100", str(destination)])
+        _require_output_file(destination, "Audio conversion")
         return
     try:
         audio, sr = sf.read(str(source), dtype="float32", always_2d=True)
         sf.write(str(destination), audio, sr)
+        _require_output_file(destination, "Audio conversion")
     except Exception as exc:
         raise RuntimeError("Could not decode this file. Re-run install.bat so the managed FFmpeg package is installed.") from exc
 
@@ -62,3 +68,4 @@ def export_mp3(source: Path, destination: Path) -> None:
     ffmpeg = _ffmpeg_path()
     if not ffmpeg: raise RuntimeError("MP3 export needs FFmpeg. Re-run install.bat to install the managed FFmpeg helper, or choose WAV output.")
     _run([ffmpeg, "-y", "-i", str(source), "-codec:a", "libmp3lame", "-q:a", "2", str(destination)])
+    _require_output_file(destination, "MP3 export")
