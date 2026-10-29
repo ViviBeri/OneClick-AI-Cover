@@ -6,7 +6,7 @@ This document defines evidence required before calling a manual verification ste
 
 The repository has automated unit tests and a Windows GitHub Actions workflow. The Windows workflow checks key dependency imports and attempts to launch the Gradio app as a local HTTP service, then verifies that the page responds with the expected application title.
 
-**This is CI smoke coverage, not a clean-machine installer certification.** GitHub-hosted runners do not reproduce every Windows version, hardware limit, network condition, proxy, or large model download. A passing CI run does not prove that Demucs separation, RVC inference, MP3 export, or voice training succeeds end-to-end.
+**This is CI smoke coverage, not a clean-machine installer certification.** GitHub-hosted runners do not reproduce every Windows version, hardware limit, network condition, proxy, or large model download. A passing CI run does not prove that Demucs separation, RVC inference, MP3 export, or voice training succeeds end-to-end. Automated unit coverage now includes matching vocal/instrumental sample rates, resampling a 48 kHz converted vocal to a 44.1 kHz instrumental when FFmpeg is available, rejecting stale RVC output, and mixing a mono converted vocal with stereo accompaniment. These tests verify the relevant utility behavior; they do **not** replace a real RVC + Demucs end-to-end run.
 
 ## CI smoke test
 
