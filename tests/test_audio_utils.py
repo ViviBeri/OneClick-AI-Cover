@@ -157,3 +157,18 @@ def test_mp3_export_rejects_empty_output(monkeypatch, tmp_path):
         assert "without creating a non-empty output file" in str(exc)
     else:
         raise AssertionError("Expected MP3 export to reject an empty output")
+
+
+def test_mix_audio_rejects_missing_output_after_write(tmp_path, monkeypatch):
+    vocal = tmp_path / "vocal.wav"
+    instrumental = tmp_path / "instrumental.wav"
+    sf.write(vocal, [0.1, -0.1], 22050)
+    sf.write(instrumental, [0.1, -0.1], 22050)
+    monkeypatch.setattr(audio_utils.sf, "write", lambda *args, **kwargs: None)
+
+    try:
+        audio_utils.mix_audio(vocal, instrumental, tmp_path / "mix.wav")
+    except RuntimeError as exc:
+        assert "Audio mix completed without creating a non-empty output file" in str(exc)
+    else:
+        raise AssertionError("Expected mixing to reject a missing output")
