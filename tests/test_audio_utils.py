@@ -351,3 +351,47 @@ def test_mix_audio_removes_stale_output_when_input_is_empty(tmp_path):
         raise AssertionError("Expected empty input to fail clearly")
 
     assert not output.exists(), "A failed mix must remove any previous output"
+
+
+def test_read_stereo_rejects_non_finite_audio_samples(tmp_path):
+    import numpy as np
+    import pytest
+
+    source = tmp_path / "invalid.wav"
+    sf.write(source, np.array([0.1, np.nan, 0.2], dtype=np.float32), 22050, subtype="FLOAT")
+
+    with pytest.raises(RuntimeError, match="invalid non-finite samples"):
+        audio_utils._read_stereo(source)
+
+
+def test_mix_audio_rejects_negative_gain_and_clears_stale_output(tmp_path):
+    import pytest
+
+    vocal = tmp_path / "vocal.wav"
+    instrumental = tmp_path / "instrumental.wav"
+    output = tmp_path / "mix.wav"
+    sf.write(vocal, [0.1, -0.1], 22050)
+    sf.write(instrumental, [0.1, -0.1], 22050)
+    output.write_bytes(b"stale mix")
+
+    with pytest.raises(ValueError, match="cannot be negative"):
+        audio_utils.mix_audio(vocal, instrumental, output, vocal_gain=-1.0)
+
+    assert not output.exists()
+
+
+def test_mix_audio_rejects_non_finite_gain_and_clears_stale_output(tmp_path):
+    import math
+    import pytest
+
+    vocal = tmp_path / "vocal.wav"
+    instrumental = tmp_path / "instrumental.wav"
+    output = tmp_path / "mix.wav"
+    sf.write(vocal, [0.1, -0.1], 22050)
+    sf.write(instrumental, [0.1, -0.1], 22050)
+    output.write_bytes(b"stale mix")
+
+    with pytest.raises(ValueError, match="finite numbers"):
+        audio_utils.mix_audio(vocal, instrumental, output, instrumental_gain=math.nan)
+
+    assert not output.exists()
