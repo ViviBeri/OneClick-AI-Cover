@@ -35,7 +35,8 @@ def test_conversion_disables_index_when_no_index_picker_exists(monkeypatch, tmp_
     index_rate = command.index("--index-rate")
     assert command[index_rate + 1] == "0"
     assert command[command.index("--pitch") + 1] == "2"
-    import soundfile as sf\n    assert sf.info(str(output)).frames == 2205
+    import soundfile as sf
+    assert sf.info(str(output)).frames == 2205
 
 
 
