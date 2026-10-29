@@ -191,3 +191,21 @@ def test_transcode_fallback_gives_helpful_error_for_undecodable_input(monkeypatc
 
     assert not destination.exists()
 
+
+def test_mix_audio_rejects_empty_vocal_or_instrumental(tmp_path):
+    import pytest
+
+    vocal = tmp_path / "vocal.wav"
+    instrumental = tmp_path / "instrumental.wav"
+    sf.write(vocal, [], 22050)
+    sf.write(instrumental, [0.1, -0.1], 22050)
+
+    with pytest.raises(RuntimeError, match="Audio file contains no samples"):
+        audio_utils.mix_audio(vocal, instrumental, tmp_path / "mix.wav")
+
+    sf.write(vocal, [0.1, -0.1], 22050)
+    sf.write(instrumental, [], 22050)
+
+    with pytest.raises(RuntimeError, match="Audio file contains no samples"):
+        audio_utils.mix_audio(vocal, instrumental, tmp_path / "mix.wav")
+
