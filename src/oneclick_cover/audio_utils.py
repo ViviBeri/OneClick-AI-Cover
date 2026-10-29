@@ -62,6 +62,7 @@ def mix_audio(vocal_path: Path, instrumental_path: Path, output_path: Path, voca
     if peak > 0.99: mix *= 0.99 / peak
     output_path.parent.mkdir(parents=True, exist_ok=True)
     sf.write(str(output_path), mix, vocal_sr, subtype="PCM_16")
+    _require_output_file(output_path, "Audio mix")
 
 def export_mp3(source: Path, destination: Path) -> None:
     destination.parent.mkdir(parents=True, exist_ok=True)
