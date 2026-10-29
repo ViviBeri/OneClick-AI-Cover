@@ -27,6 +27,8 @@ def _require_output_file(path: Path, operation: str) -> None:
 
 def transcode_to_wav(source: Path, destination: Path) -> None:
     destination.parent.mkdir(parents=True, exist_ok=True)
+    # Never leave a previous result looking like output from this attempt.
+    destination.unlink(missing_ok=True)
     ffmpeg = _ffmpeg_path()
     if ffmpeg:
         _run([ffmpeg, "-y", "-i", str(source), "-vn", "-ac", "2", "-ar", "44100", str(destination)])
@@ -79,6 +81,7 @@ def match_sample_rate(source: Path, reference: Path, destination: Path) -> Path:
             "Re-run install.bat to install the managed FFmpeg helper."
         )
     destination.parent.mkdir(parents=True, exist_ok=True)
+    destination.unlink(missing_ok=True)
     _run([ffmpeg, "-y", "-i", str(source), "-ar", str(target_sr), "-ac", "2", str(destination)])
     _require_output_file(destination, "Sample-rate conversion")
     return destination
@@ -86,6 +89,8 @@ def match_sample_rate(source: Path, reference: Path, destination: Path) -> Path:
 
 def export_mp3(source: Path, destination: Path) -> None:
     destination.parent.mkdir(parents=True, exist_ok=True)
+    # A failed export must not leave an old MP3 that looks like a fresh result.
+    destination.unlink(missing_ok=True)
     ffmpeg = _ffmpeg_path()
     if not ffmpeg: raise RuntimeError("MP3 export needs FFmpeg. Re-run install.bat to install the managed FFmpeg helper, or choose WAV output.")
     _run([ffmpeg, "-y", "-i", str(source), "-codec:a", "libmp3lame", "-q:a", "2", str(destination)])
