@@ -11,7 +11,8 @@ from oneclick_cover.conversion import convert_voice
 from oneclick_cover.training import launch_training_ui
 from oneclick_cover.dataset import prepare_recordings
 from oneclick_cover.settings import ROOT
-for folder in (VOICE_DIR, OUTPUT_DIR, LOG_DIR): folder.mkdir(parents=True, exist_ok=True)
+UNVERIFIED_MODEL_DIR = ROOT / "models" / "unverified"
+for folder in (VOICE_DIR, OUTPUT_DIR, LOG_DIR, UNVERIFIED_MODEL_DIR): folder.mkdir(parents=True, exist_ok=True)
 logging.basicConfig(filename=LOG_DIR / "oneclick-cover.log", level=logging.INFO)
 def models(): return sorted(p.name for p in VOICE_DIR.glob("*.pth") if p.is_file())
 def refresh_models():
@@ -47,9 +48,8 @@ def search_hf_models(query):
 def download_hf_model(repo_id, filename, confirmed):
     try:
         from oneclick_cover.hf_models import download_public_pth_model
-        message = download_public_pth_model(repo_id, filename, VOICE_DIR, confirmed)
-        choices = models()
-        return gr.update(choices=choices, value=Path(filename).name), message
+        message = download_public_pth_model(repo_id, filename, UNVERIFIED_MODEL_DIR, confirmed)
+        return gr.update(), message + "\\n\\nSecurity hold: this download is stored outside the active voice-model folder. It will not appear in Generate Cover. Review the file and model-card terms, then use Import Voice Model for a separate, deliberate import action only if you trust the publisher and file."
     except Exception as exc:
         logging.exception("Hugging Face model download failed")
         raise gr.Error(str(exc)) from exc
@@ -160,7 +160,7 @@ This opens the upstream RVC training interface locally. It is an advanced workfl
 
 Search public model-card metadata without an account or API token. Search results are community uploads, not endorsements. Review the model card, license, voice consent, and compatibility before downloading.
 
-**Safety:** RVC .pth files may contain pickle-based data. Download only from sources you trust. The app does not inspect or load the weights during download. No song or voice recording is uploaded.
+**Safety:** RVC .pth files may contain pickle-based data. Download only from sources you trust. The app does not inspect or load the weights during download. Downloads are quarantined in `models/unverified/` and are not selectable for conversion until you separately import them. Importing and using a `.pth` file can invoke unsafe pickle deserialization in the RVC backend; only proceed with files from publishers you trust. No song or voice recording is uploaded.
 """)
             hf_query=gr.Textbox(label="Search public models",placeholder="RVC voice model")
             hf_search=gr.Button("Search public Hugging Face models")
