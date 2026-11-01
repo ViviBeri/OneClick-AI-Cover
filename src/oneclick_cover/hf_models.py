@@ -18,19 +18,20 @@ _REPO_ID = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_.-]*/[A-Za-z0-9][A-Za-z0-9_.-]*$"
 
 
 def search_public_rvc_models(query: str = "", limit: int = 10) -> str:
-    """Return concise public Hub search results; no login or token is used."""
+    """Return concise public Hub search results without reading a saved token."""
     term = (query or "").strip()
     if len(term) > 80:
         raise ValueError("Search text must be 80 characters or fewer.")
     if not 1 <= int(limit) <= 20:
         raise ValueError("Result limit must be between 1 and 20.")
-    api = HfApi()
+    api = HfApi(token=False)
     models = api.list_models(
         search=term or "RVC",
         limit=int(limit),
         sort="downloads",
         direction=-1,
         cardData=True,
+        token=False,
     )
     lines = []
     for item in models:
@@ -45,12 +46,12 @@ def search_public_rvc_models(query: str = "", limit: int = 10) -> str:
             if isinstance(card, dict):
                 license_name = card.get("license", license_name)
         lines.append(
-            f"Repository: {repo_id}\n"
-            f"Public access: {'gated - not downloadable anonymously' if gated else 'listed; verify public files'}\n"
-            f"License metadata: {license_name or 'not declared - review model card'}\n"
-            f"Model card: https://huggingface.co/{repo_id}\n"
+            f"Repository: {repo_id}\\n"
+            f"Public access: {'gated - not downloadable anonymously' if gated else 'listed; verify public files'}\\n"
+            f"License metadata: {license_name or 'not declared - review model card'}\\n"
+            f"Model card: https://huggingface.co/{repo_id}\\n"
         )
-    return "\n".join(lines) if lines else "No matching public model repositories were found."
+    return "\\n".join(lines) if lines else "No matching public model repositories were found."
 
 
 def download_public_pth_model(
@@ -61,16 +62,16 @@ def download_public_pth_model(
 ) -> str:
     """Download one explicitly selected public .pth file without authentication."""
     repo_id = (repo_id or "").strip()
-    filename = (filename or "").strip().replace("\\", "/")
+    filename = (filename or "").strip().replace("\\\\", "/")
     if not confirmed:
         raise ValueError("Confirm that you reviewed the model card, license, and voice permissions.")
     if not _REPO_ID.fullmatch(repo_id):
         raise ValueError("Enter a valid Hugging Face repository ID in owner/repository format.")
     if not filename.lower().endswith(".pth") or filename.startswith("/") or ".." in Path(filename).parts:
         raise ValueError("Enter the exact relative path of a .pth file in the repository.")
-    api = HfApi()
+    api = HfApi(token=False)
     try:
-        info = api.model_info(repo_id, files_metadata=True)
+        info = api.model_info(repo_id, files_metadata=True, token=False)
     except GatedRepoError as exc:
         raise ValueError("This model is gated. Anonymous free downloads are not available; use a local model instead.") from exc
     except HfHubHTTPError as exc:
