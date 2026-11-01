@@ -36,6 +36,24 @@ def import_voice_model(uploaded_file):
     except Exception as exc:
         logging.exception("Voice model import failed")
         raise gr.Error(str(exc)) from exc
+def search_hf_models(query):
+    try:
+        from oneclick_cover.hf_models import search_public_rvc_models
+        return search_public_rvc_models(query)
+    except Exception as exc:
+        logging.exception("Hugging Face model search failed")
+        raise gr.Error(f"Public model search failed: {exc}") from exc
+
+def download_hf_model(repo_id, filename, confirmed):
+    try:
+        from oneclick_cover.hf_models import download_public_pth_model
+        message = download_public_pth_model(repo_id, filename, VOICE_DIR, confirmed)
+        choices = models()
+        return gr.update(choices=choices, value=Path(filename).name), message
+    except Exception as exc:
+        logging.exception("Hugging Face model download failed")
+        raise gr.Error(str(exc)) from exc
+
 def prepare_training_dataset(uploaded_files, dataset_name, progress=gr.Progress()):
     try:
         progress(0.1, desc="Checking recordings")
@@ -137,6 +155,23 @@ This opens the upstream RVC training interface locally. It is an advanced workfl
             launch_train=gr.Button("Open RVC Training UI",variant="primary")
             train_status=gr.Textbox(label="Training UI status",interactive=False)
             launch_train.click(fn=launch_training_ui,inputs=[],outputs=[train_status])
+        with gr.Tab("Free Model Browser"):
+            gr.Markdown("""## Public Hugging Face model browser
+
+Search public model-card metadata without an account or API token. Search results are community uploads, not endorsements. Review the model card, license, voice consent, and compatibility before downloading.
+
+**Safety:** RVC .pth files may contain pickle-based data. Download only from sources you trust. The app does not inspect or load the weights during download. No song or voice recording is uploaded.
+""")
+            hf_query=gr.Textbox(label="Search public models",placeholder="RVC voice model")
+            hf_search=gr.Button("Search public Hugging Face models")
+            hf_results=gr.Textbox(label="Search results and model-card links",lines=12,interactive=False)
+            hf_repo=gr.Textbox(label="Exact repository ID",placeholder="owner/repository")
+            hf_filename=gr.Textbox(label="Exact .pth filename in repository",placeholder="model.pth")
+            hf_confirm=gr.Checkbox(label="I reviewed the model card, license, and voice permissions, and trust this model file.",value=False)
+            hf_download=gr.Button("Download selected public .pth model",variant="primary")
+            hf_status=gr.Textbox(label="Download status",interactive=False)
+            hf_search.click(fn=search_hf_models,inputs=[hf_query],outputs=[hf_results])
+            hf_download.click(fn=download_hf_model,inputs=[hf_repo,hf_filename,hf_confirm],outputs=[model,hf_status])
         with gr.Tab("Import Voice Model"):
             gr.Markdown("## Import a trained RVC model\nUpload an inference-ready .pth file you created or are authorized to use. The model is copied into this app's local models/voices folder.")
             model_upload=gr.File(label="RVC model (.pth)",file_types=[".pth"],type="filepath")
