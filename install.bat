@@ -57,8 +57,13 @@ if not exist "%RVC_DIR%\infer\cli.py" (
 )
 set "SETUP_STAGE=Installing RVC Python 3.12 dependencies"
 echo [5/6] Creating the separate RVC Python 3.12 environment...
-if not exist "%RVC_DIR%\.venv\Scripts\python.exe" "%UV_EXE%" venv --python 3.12 "%RVC_DIR%\.venv"
-if errorlevel 1 goto failed
+if not exist "%RVC_DIR%\.venv\Scripts\python.exe" (
+  pushd "%RVC_DIR%"
+  "%UV_EXE%" venv --python 3.12 .venv
+  set "RVC_VENV_EXIT=%ERRORLEVEL%"
+  popd
+  if not "%RVC_VENV_EXIT%"=="0" goto failed
+)
 if not exist "%RVC_DIR%\.runtime-ready-py312" (
   if not exist "%RVC_DIR%\requirments_cpu_py312.txt" (
     echo ERROR: RVC CPU requirements file was not found in the downloaded backend.
