@@ -23,7 +23,7 @@ def test_download_rejects_invalid_identifiers(tmp_path, repo_id, filename):
         hf_models.download_public_pth_model(repo_id, filename, tmp_path, True)
 
 
-def test_search_rejects_long_query(monkeypatch):
+def test_search_rejects_long_query():
     with pytest.raises(ValueError, match="80 characters"):
         hf_models.search_public_rvc_models("x" * 81)
 
@@ -43,7 +43,11 @@ def test_download_requires_exact_file_in_public_repo(tmp_path, monkeypatch):
         siblings = [Sibling()]
 
     class FakeApi:
-        def model_info(self, repo_id, files_metadata=True):
+        def __init__(self, token=False):
+            assert token is False
+
+        def model_info(self, repo_id, files_metadata=True, token=False):
+            assert token is False
             return Info()
 
     monkeypatch.setattr(hf_models, "HfApi", FakeApi)
@@ -63,7 +67,11 @@ def test_download_rejects_oversized_model_before_transfer(tmp_path, monkeypatch)
         siblings = [Sibling()]
 
     class FakeApi:
-        def model_info(self, repo_id, files_metadata=True):
+        def __init__(self, token=False):
+            assert token is False
+
+        def model_info(self, repo_id, files_metadata=True, token=False):
+            assert token is False
             return Info()
 
     monkeypatch.setattr(hf_models, "HfApi", FakeApi)
