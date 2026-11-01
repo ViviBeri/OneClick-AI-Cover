@@ -33,6 +33,12 @@ OneClick-AI-Cover is designed to take an audio track through a local workflow:
 | **04 · Mix** | Converted vocals are sample-rate matched and mixed with the instrumental. |
 | **05 · Export** | Save a WAV file or choose optional MP3 export through FFmpeg. |
 
+### Free public model browser
+
+The **Free Model Browser** tab optionally searches public Hugging Face model-card metadata and downloads a user-selected public `.pth` file. No Hub token or paid inference endpoint is required. Public Hub access remains subject to Hugging Face's current rate limits, bandwidth policies, and repository terms. Review the model card, license, and voice permissions before downloading. Downloads are not proof of RVC compatibility; local manual model import remains available.
+
+See [free-tier architecture](docs/FREE_TIER_ARCHITECTURE.md) for the privacy, licensing, and model-safety boundaries.
+
 ### Highlights
 
 - **Local-first processing:** the app runs on your machine; it does not automatically upload your song or recordings to a cloud service.
