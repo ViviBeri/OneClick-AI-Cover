@@ -46,12 +46,12 @@ def search_public_rvc_models(query: str = "", limit: int = 10) -> str:
             if isinstance(card, dict):
                 license_name = card.get("license", license_name)
         lines.append(
-            f"Repository: {repo_id}\\n"
-            f"Public access: {'gated - not downloadable anonymously' if gated else 'listed; verify public files'}\\n"
-            f"License metadata: {license_name or 'not declared - review model card'}\\n"
-            f"Model card: https://huggingface.co/{repo_id}\\n"
+            f"Repository: {repo_id}\n"
+            f"Public access: {'gated - not downloadable anonymously' if gated else 'listed; verify public files'}\n"
+            f"License metadata: {license_name or 'not declared - review model card'}\n"
+            f"Model card: https://huggingface.co/{repo_id}\n"
         )
-    return "\\n".join(lines) if lines else "No matching public model repositories were found."
+    return "\n".join(lines) if lines else "No matching public model repositories were found."
 
 
 def download_public_pth_model(
@@ -62,7 +62,7 @@ def download_public_pth_model(
 ) -> str:
     """Download one explicitly selected public .pth file without authentication."""
     repo_id = (repo_id or "").strip()
-    filename = (filename or "").strip().replace("\\\\", "/")
+    filename = (filename or "").strip().replace("\\", "/")
     if not confirmed:
         raise ValueError("Confirm that you reviewed the model card, license, and voice permissions.")
     if not _REPO_ID.fullmatch(repo_id):
