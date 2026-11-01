@@ -60,9 +60,11 @@ echo [5/6] Creating the separate RVC Python 3.12 environment...
 if not exist "%RVC_DIR%\.venv\Scripts\python.exe" (
   pushd "%RVC_DIR%"
   "%UV_EXE%" venv --python 3.12 .venv
-  set "RVC_VENV_EXIT=%ERRORLEVEL%"
+  if errorlevel 1 (
+    popd
+    goto failed
+  )
   popd
-  if not "%RVC_VENV_EXIT%"=="0" goto failed
 )
 if not exist "%RVC_DIR%\.runtime-ready-py312" (
   if not exist "%RVC_DIR%\requirments_cpu_py312.txt" (
