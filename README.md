@@ -15,6 +15,13 @@
 
 > **Project status: early integration build.** The UI and processing stages are integrated with automated regression coverage, but clean-machine installation and a complete real-audio conversion have not yet been verified. The 3D-style banner is decorative project artwork; the application itself is a local Gradio interface.
 
+---
+
+## Support this project
+
+If this project is useful to you, consider [sponsoring my open-source work](https://github.com/sponsors/ViviBeri). Your support helps fund ongoing maintenance, testing, documentation, and future improvements.
+
+
 ## What it does
 
 OneClick-AI-Cover is designed to take an audio track through a local workflow:
