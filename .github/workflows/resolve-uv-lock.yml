@@ -1,0 +1,46 @@
+name: Resolve and validate uv lockfile
+
+on:
+  push:
+    branches:
+      - chore/resolve-uv-lockfile
+    paths:
+      - pyproject.toml
+      - .github/workflows/resolve-uv-lock.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  resolve:
+    name: Resolve main-app dependencies
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+
+      - name: Resolve lockfile for declared Python range
+        run: uv lock
+
+      - name: Verify lockfile is reproducible
+        run: uv lock --check
+
+      - name: Validate Python compatibility metadata
+        run: |
+          uv python find 3.10
+          uv python find 3.11
+          uv lock --check
+
+      - name: Upload resolved lockfile
+        uses: actions/upload-artifact@v4
+        with:
+          name: oneclick-ai-cover-uv-lock
+          path: uv.lock
+          if-no-files-found: error
+          retention-days: 14
