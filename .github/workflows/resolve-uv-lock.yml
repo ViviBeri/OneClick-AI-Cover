@@ -25,13 +25,18 @@ jobs:
         with:
           enable-cache: true
 
+      - name: Install supported Python interpreters
+        run: |
+          uv python install 3.10
+          uv python install 3.11
+
       - name: Resolve lockfile for declared Python range
         run: uv lock
 
       - name: Verify lockfile is reproducible
         run: uv lock --check
 
-      - name: Validate Python compatibility metadata
+      - name: Validate Python compatibility
         run: |
           uv python find 3.10
           uv python find 3.11
