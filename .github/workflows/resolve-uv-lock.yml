@@ -10,7 +10,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   resolve:
@@ -19,6 +19,8 @@ jobs:
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
+        with:
+          ref: chore/resolve-uv-lockfile
 
       - name: Set up uv
         uses: astral-sh/setup-uv@v6
@@ -41,6 +43,18 @@ jobs:
           uv python find 3.10
           uv python find 3.11
           uv lock --check
+
+      - name: Commit generated lockfile
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add uv.lock
+          if git diff --cached --quiet; then
+            echo "uv.lock is already up to date"
+          else
+            git commit -m "chore: add reproducible uv lockfile"
+            git push origin HEAD:chore/resolve-uv-lockfile
+          fi
 
       - name: Upload resolved lockfile
         uses: actions/upload-artifact@v4
