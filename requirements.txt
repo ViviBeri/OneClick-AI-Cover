@@ -1,4 +1,4 @@
-gradio>=4.44,<6
+gradio>=4.44,<7
 demucs==4.0.1
 numpy>=1.24,<2.0
 soundfile>=0.12.1
