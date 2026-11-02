@@ -1,0 +1,65 @@
+name: Resolve and validate uv lockfile
+
+on:
+  push:
+    branches:
+      - chore/resolve-uv-lockfile
+    paths:
+      - pyproject.toml
+      - .github/workflows/resolve-uv-lock.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  resolve:
+    name: Resolve main-app dependencies
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: chore/resolve-uv-lockfile
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@d0cc045d04ccac9d8b7881df0226f9e82c39688e
+        with:
+          enable-cache: true
+
+      - name: Install supported Python interpreters
+        run: |
+          uv python install 3.10
+          uv python install 3.11
+
+      - name: Resolve lockfile for declared Python range
+        run: uv lock
+
+      - name: Verify lockfile is reproducible
+        run: uv lock --check
+
+      - name: Validate Python compatibility
+        run: |
+          uv python find 3.10
+          uv python find 3.11
+          uv lock --check
+
+      - name: Commit generated lockfile
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add uv.lock
+          if git diff --cached --quiet; then
+            echo "uv.lock is already up to date"
+          else
+            git commit -m "chore: add reproducible uv lockfile"
+            git push origin HEAD:chore/resolve-uv-lockfile
+          fi
+
+      - name: Upload resolved lockfile
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: oneclick-ai-cover-uv-lock
+          path: uv.lock
+          if-no-files-found: error
+          retention-days: 14
