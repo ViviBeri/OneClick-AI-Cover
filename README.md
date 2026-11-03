@@ -163,6 +163,10 @@ This remains an advanced, partly manual workflow. The [voice-training guide](doc
 - [Contributing](CONTRIBUTING.md)
 - [Security policy](SECURITY.md)
 
+## Engineering build log
+
+- [Build Log 01 — Designing a Local-First AI Audio Workflow](docs/BUILD_LOG_01_LOCAL_AI_AUDIO_WORKFLOW.md): pipeline architecture, model handling boundaries, failure checks, CI scope, and remaining real-world verification.
+
 ## Roadmap
 
 - [x] Local Gradio starter UI and audio-processing modules
