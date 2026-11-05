@@ -60,7 +60,7 @@ def inspect_rvc_checkpoint(path: Path) -> str:
         for opcode, argument, _position in pickletools.genops(raw):
             if isinstance(argument, str):
                 strings.add(argument)
-    except (ValueError, pickletools.OpcodeInfo) as exc:
+    except (ValueError, IndexError, EOFError) as exc:
         raise ValueError(f"Checkpoint metadata could not be parsed safely: {exc}") from exc
 
     found = [label for label, marker in _MARKERS.items() if marker in strings]
