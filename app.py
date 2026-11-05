@@ -37,6 +37,16 @@ def import_voice_model(uploaded_file):
     except Exception as exc:
         logging.exception("Voice model import failed")
         raise gr.Error(str(exc)) from exc
+def preflight_voice_model(uploaded_file):
+    if not uploaded_file:
+        raise gr.Error("Choose a .pth model file to inspect.")
+    try:
+        from oneclick_cover.model_preflight import inspect_rvc_checkpoint
+        return inspect_rvc_checkpoint(Path(uploaded_file))
+    except Exception as exc:
+        logging.exception("Model preflight failed")
+        raise gr.Error(str(exc)) from exc
+
 def search_hf_models(query):
     try:
         from oneclick_cover.hf_models import search_public_rvc_models
@@ -155,6 +165,17 @@ This opens the upstream RVC training interface locally. It is an advanced workfl
             launch_train=gr.Button("Open RVC Training UI",variant="primary")
             train_status=gr.Textbox(label="Training UI status",interactive=False)
             launch_train.click(fn=launch_training_ui,inputs=[],outputs=[train_status])
+        with gr.Tab("Model Preflight"):
+            gr.Markdown("""## Static RVC checkpoint preflight
+
+Select a local .pth file to inspect its PyTorch ZIP metadata without calling pickle.load() or torch.load(). The scan reports common RVC marker strings only; it cannot verify tensor shapes, actual compatibility, audio quality, or file safety. Legacy checkpoint formats may be inconclusive.
+
+**Important:** the RVC inference backend may deserialize .pth files with torch.load(). Only import and use models from publishers you personally trust. This preflight does not make an untrusted model safe.
+""")
+            preflight_file=gr.File(label="RVC model (.pth)",file_types=[".pth"],type="filepath")
+            preflight_button=gr.Button("Inspect checkpoint metadata")
+            preflight_result=gr.Textbox(label="Static preflight report",lines=12,interactive=False)
+            preflight_button.click(fn=preflight_voice_model,inputs=[preflight_file],outputs=[preflight_result])
         with gr.Tab("Free Model Browser"):
             gr.Markdown("""## Public Hugging Face model browser
 
