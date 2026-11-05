@@ -42,7 +42,7 @@ OneClick-AI-Cover is designed to take an audio track through a local workflow:
 
 ### Free public model browser
 
-The **Free Model Browser** tab optionally searches public Hugging Face model-card metadata and downloads a user-selected public `.pth` file. No Hub token or paid inference endpoint is required. Public Hub access remains subject to Hugging Face's current rate limits, bandwidth policies, and repository terms. Review the model card, license, and voice permissions before downloading. Downloads are not proof of RVC compatibility; local manual model import remains available.
+The **Free Model Browser** tab optionally searches public Hugging Face model-card metadata and downloads a user-selected public `.pth` file. No Hub token or paid inference endpoint is required. Public Hub access remains subject to Hugging Face's current rate limits, bandwidth policies, and repository terms. Review the model card, license, and voice permissions before downloading. Downloads are quarantined under `models/unverified/` and do not become selectable until separately imported. The **Model Preflight** tab scans selected `.pth` ZIP metadata without calling `pickle.load()` or `torch.load()`. It reports common RVC marker strings only; it cannot validate tensor dimensions, certify compatibility, or make a model safe. The RVC backend may still deserialize imported weights unsafely, so use only publishers you trust. Local manual model import remains available.
 
 See [free-tier architecture](docs/FREE_TIER_ARCHITECTURE.md) for the privacy, licensing, and model-safety boundaries.
 
@@ -97,6 +97,7 @@ The main interface is in `app.py`. Audio utilities live in `src/oneclick_cover/a
 |---|---|---|
 | Source checks and automated regression tests | CI checked | [Tests workflow](https://github.com/ViviBeri/OneClick-AI-Cover/actions/workflows/tests.yml) |
 | Windows dependency/import and startup checks | CI checked | [Windows Checks workflow](https://github.com/ViviBeri/OneClick-AI-Cover/actions/workflows/windows-checks.yml) |
+| Static model preflight and quarantine regression tests | CI passed | [Tests workflow](https://github.com/ViviBeri/OneClick-AI-Cover/actions/workflows/tests.yml) |
 | Clean Windows 10/11 x64 installation | **Pending manual verification** | [Issue #1](https://github.com/ViviBeri/OneClick-AI-Cover/issues/1) |
 | Managed FFmpeg MP3 import/export on Windows | **Pending manual verification** | [Issue #2](https://github.com/ViviBeri/OneClick-AI-Cover/issues/2) |
 | Full authorized-audio conversion (Demucs → RVC → mix → export) | **Pending manual verification** | [Issue #3](https://github.com/ViviBeri/OneClick-AI-Cover/issues/3) |
@@ -175,6 +176,8 @@ This remains an advanced, partly manual workflow. The [voice-training guide](doc
 - [x] Voice-model import and recording preparation tools
 - [x] Windows CI checks and automated regression tests
 - [x] Failure handling and stale output cleanup
+- [x] Public model download quarantine and regression tests
+- [x] Static non-deserializing RVC checkpoint preflight and regression tests
 - [ ] Verify installer on a clean Windows machine
 - [ ] Verify full conversion with authorized audio and a compatible model
 - [ ] Profile memory, CPU and GPU performance
