@@ -108,6 +108,7 @@ def separate_vocals(
     reader.start()
 
     timed_out = False
+    last_fraction = 0.0
     while True:
         remaining = deadline - time.monotonic()
         if remaining <= 0:
@@ -127,10 +128,8 @@ def separate_vocals(
         if progress is not None:
             try:
                 if matches:
-                    fraction = min(1.0, max(0.0, int(matches[-1]) / 100))
-                    progress(fraction, message.strip()[-160:])
-                elif message.strip():
-                    progress(0.0, message.strip()[-160:])
+                    last_fraction = min(1.0, max(last_fraction, int(matches[-1]) / 100))
+                progress(last_fraction, message.strip()[-160:])
             except Exception:
                 # UI progress reporting must not interrupt the audio subprocess.
                 pass
