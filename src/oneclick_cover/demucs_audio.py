@@ -6,6 +6,30 @@ import soundfile as sf
 import torch
 
 
+def load_audio_without_torchcodec(
+    path: str | Path,
+    frame_offset: int = 0,
+    num_frames: int = -1,
+    normalize: bool = True,
+    channels_first: bool = True,
+    format: str | None = None,
+) -> tuple[torch.Tensor, int]:
+    """Read Demucs input WAV files through SoundFile instead of TorchCodec."""
+    if not normalize:
+        raise ValueError("Demucs input loading requires normalized float audio.")
+    audio, samplerate = sf.read(
+        str(path),
+        start=frame_offset,
+        frames=num_frames,
+        dtype="float32",
+        always_2d=True,
+    )
+    waveform = torch.from_numpy(audio)
+    if channels_first:
+        waveform = waveform.transpose(0, 1)
+    return waveform, samplerate
+
+
 def save_audio_without_torchcodec(
     wav: torch.Tensor,
     path: str | Path,
@@ -16,12 +40,12 @@ def save_audio_without_torchcodec(
     as_float: bool = False,
     preset: int = 2,
 ) -> None:
-    """Save Demucs stems without torchaudio.save/TorchCodec.
+    """Save Demucs audio I/O without TorchCodec.
 
-    Demucs 4.0.1 calls torchaudio.save for WAV/FLAC output. TorchAudio 2.11
+    Demucs 4.0.1 calls torchaudio.load/save for WAV input and stem output. TorchAudio 2.11
     delegates those operations to TorchCodec, which needs FFmpeg shared DLLs
-    on Windows. SoundFile already ships with the app and can write these stems
-    directly, so keep the model pipeline independent of that extra runtime.
+    on Windows. SoundFile already ships with the app and can read/write the
+    pipeline's WAV files directly, so keep Demucs independent of that runtime.
     """
     from demucs.audio import encode_mp3, prevent_clip
 
