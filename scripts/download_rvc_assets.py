@@ -60,7 +60,8 @@ def download_rvc_assets(
         raise RuntimeError(f"{REPO_ID}@{REVISION} is gated; anonymous download is unavailable.")
 
     siblings = {item.rfilename: item for item in (info.siblings or [])}
-    installed = []
+    # Validate the complete manifest before downloading anything. A partial Hub
+    # revision must not leave a half-installed inference runtime behind.
     for filename, metadata in ASSETS.items():
         sibling = siblings.get(filename)
         if sibling is None:
@@ -69,6 +70,8 @@ def download_rvc_assets(
         if remote_size is not None and remote_size != metadata["size"]:
             raise RuntimeError(f"Hub metadata size changed for {filename}: {remote_size}")
 
+    installed = []
+    for filename, metadata in ASSETS.items():
         destination = root / metadata["destination"]
         if verify_file(destination, metadata):
             installed.append(destination)
