@@ -22,3 +22,6 @@ datasets/
 *.m4a
 *.ogg
 *.aac
+
+e2e-artifacts/
+models/unverified/
