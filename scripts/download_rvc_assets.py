@@ -99,6 +99,17 @@ def download_rvc_assets(
     return installed
 
 
+
+def missing_rvc_assets(rvc_root: Path) -> list[str]:
+    """Return required backend-relative paths that are absent or fail integrity checks."""
+    root = Path(rvc_root)
+    return [
+        metadata["destination"].as_posix()
+        for metadata in ASSETS.values()
+        if not verify_file(root / metadata["destination"], metadata)
+    ]
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--rvc-root", required=True, type=Path)
