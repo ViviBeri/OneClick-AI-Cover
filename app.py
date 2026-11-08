@@ -18,7 +18,7 @@ logging.basicConfig(filename=LOG_DIR / "oneclick-cover.log", level=logging.INFO)
 def models(): return sorted(p.name for p in VOICE_DIR.glob("*.pth") if p.is_file())
 def refresh_models():
     choices = models()
-    return gr.update(choices=choices, value=(choices[0] if choices else None))
+    return gr.Dropdown(choices=choices, value=(choices[0] if choices else None))
 def import_voice_model(uploaded_file):
     if not uploaded_file:
         raise gr.Error("Choose a .pth voice model file first.")
@@ -34,7 +34,7 @@ def import_voice_model(uploaded_file):
         if source.resolve() != destination:
             shutil.copy2(source, destination)
         choices = models()
-        return gr.update(choices=choices, value=destination.name), f"Imported {destination.name}. You can now select it under Generate Cover."
+        return gr.Dropdown(choices=choices, value=destination.name), f"Imported {destination.name}. You can now select it under Generate Cover."
     except Exception as exc:
         logging.exception("Voice model import failed")
         raise gr.Error(str(exc)) from exc
@@ -60,7 +60,7 @@ def download_hf_model(repo_id, filename, confirmed):
     try:
         from oneclick_cover.hf_models import download_public_pth_model
         message = download_public_pth_model(repo_id, filename, UNVERIFIED_MODEL_DIR, confirmed)
-        return gr.update(), message + "\n\nSecurity hold: this download is stored outside the active voice-model folder. It will not appear in Generate Cover. Review the file and model-card terms, then use Import Voice Model for a separate, deliberate import action only if you trust the publisher and file."
+        return gr.skip(), message + "\n\nSecurity hold: this download is stored outside the active voice-model folder. It will not appear in Generate Cover. Review the file and model-card terms, then use Import Voice Model for a separate, deliberate import action only if you trust the publisher and file."
     except Exception as exc:
         logging.exception("Hugging Face model download failed")
         raise gr.Error(str(exc)) from exc
