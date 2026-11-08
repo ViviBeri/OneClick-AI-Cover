@@ -52,11 +52,20 @@ def main() -> int:
                 raise TimeoutError(f"Gradio app did not start: {last_error}")
 
             page.get_by_role("tab", name="Import Voice Model").click()
-            upload = page.get_by_label("RVC model (.pth)").last
+            # Gradio 6 does not consistently associate the visible component label
+            # with its hidden file input. Both model-preflight and import tabs accept
+            # .pth files, so the final matching input is the import control.
+            upload = page.locator('input[type="file"][accept*=".pth"]').last
+            if upload.count() == 0:
+                inputs = page.locator('input[type="file"]').evaluate_all(
+                    "(elements) => elements.map((element) => ({accept: element.accept, id: element.id}))"
+                )
+                raise RuntimeError(f"No .pth upload input found; file inputs: {inputs}")
+
             with tempfile.TemporaryDirectory(prefix="gradio-import-smoke-") as temporary:
                 candidate = Path(temporary) / "browser-smoke-model.pth"
                 candidate.write_bytes(b"browser callback smoke test" + bytes(2048))
-                upload.set_input_files(str(candidate))
+                upload.set_input_files(str(candidate), timeout=10000)
                 page.get_by_role("button", name="Import model").click()
                 expect(page.get_by_label("Import status")).to_have_value(
                     "Imported browser-smoke-model.pth. You can now select it under Generate Cover.",
