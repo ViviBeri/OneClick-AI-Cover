@@ -113,6 +113,16 @@ This project currently uses a ZIP + batch-file setup rather than a verified MSI/
 
 With a compatible RVC model and a short audio file you are authorized to process:
 
+**Run the standalone CPU inference check first.** Prepare a 15-second WAV vocal clip and select a trusted, inference-ready `.pth` model that you have permission to use. From the project root, run:
+
+```powershell
+.\.venv\Scripts\python.exe scripts\smoke_test_rvc_cpu.py --input C:\path\to\authorized-15s-vocal.wav --model models\voices\trusted-model.pth --output outputs\rvc-cpu-smoke.wav
+```
+
+The script checks that all four HuBERT/RMVPE assets exist, hides CUDA devices, requires the RVC CLI to report CPU execution, runs with RMVPE, and verifies a playable output of plausible duration. It has a 30-minute timeout. This is a manual test because no voice model is bundled or automatically trusted by the project. Save the PASS report and sanitized output metadata; do not upload the audio or model.
+
+Then run the complete workflow:
+
 1. Convert/import the input.
 2. Run Demucs separation.
 3. Run RVC inference.
