@@ -19,7 +19,7 @@ The **Train My Voice** tab opens the training interface supplied by the pinned u
 
 ## Launch
 
-1. Run `install.bat` and confirm it finishes without errors. The app uses Python 3.10; the pinned RVC backend uses Python 3.12 and its CPU dependency set for Intel/AMD/CPU systems.
+1. Run `install.bat` and confirm it finishes without errors. The app uses Python 3.11; the pinned RVC backend uses Python 3.12 and its CPU dependency set for Intel/AMD/CPU systems.
 2. Run `run.bat` and open the local OneClick-AI-Cover interface.
 3. Select **Train My Voice (Experimental)** and click **Open RVC Training UI**.
 4. A separate console should open. Wait for the upstream backend to print its local web address, then open that address in your browser.
