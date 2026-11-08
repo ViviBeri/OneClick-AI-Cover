@@ -31,6 +31,20 @@ def check_imports() -> None:
     print(f"CPU PyTorch verified: torch {torch.__version__}, torchaudio {torchaudio.__version__}")
 
 
+def validate_page(status: int, body: str) -> None:
+    """Fail unless the rendered Gradio page advertises the expected app and tab."""
+    if status != 200:
+        raise RuntimeError(f"Unexpected HTTP status: {status}")
+    if "OneClick-AI-Cover" not in body:
+        raise RuntimeError(
+            "The Gradio page returned HTTP 200 but did not contain the expected app title."
+        )
+    if "System Check" not in body:
+        raise RuntimeError(
+            "The Gradio page loaded, but the System Check tab was not present."
+        )
+
+
 def wait_for_server(process: subprocess.Popen[str], timeout: float = 45.0) -> None:
     deadline = time.monotonic() + timeout
     last_error: str | None = None
@@ -46,17 +60,7 @@ def wait_for_server(process: subprocess.Popen[str], timeout: float = 45.0) -> No
             )
             with urllib.request.urlopen(request, timeout=2) as response:
                 body = response.read(1_000_000).decode("utf-8", errors="replace")
-                if response.status != 200:
-                    raise RuntimeError(f"Unexpected HTTP status: {response.status}")
-                if "OneClick-AI-Cover" not in body:
-                    raise RuntimeError(
-                        "The Gradio page returned HTTP 200 but did not contain "
-                        "the expected app title."
-                    )
-                if "System Check" not in body:
-                    raise RuntimeError(
-                        "The Gradio page loaded, but the System Check tab was not present."
-                    )
+                validate_page(response.status, body)
                 print(
                     f"HTTP SMOKE TEST OK: {URL} (status {response.status}); "
                     "System Check tab is present."
