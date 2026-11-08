@@ -1,5 +1,3 @@
-from pathlib import Path
-
 import gradio as gr
 
 import app
