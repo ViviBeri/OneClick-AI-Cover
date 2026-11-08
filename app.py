@@ -59,7 +59,7 @@ def download_hf_model(repo_id, filename, confirmed):
     try:
         from oneclick_cover.hf_models import download_public_pth_model
         message = download_public_pth_model(repo_id, filename, UNVERIFIED_MODEL_DIR, confirmed)
-        return gr.update(), message + "\\n\\nSecurity hold: this download is stored outside the active voice-model folder. It will not appear in Generate Cover. Review the file and model-card terms, then use Import Voice Model for a separate, deliberate import action only if you trust the publisher and file."
+        return gr.update(), message + "\n\nSecurity hold: this download is stored outside the active voice-model folder. It will not appear in Generate Cover. Review the file and model-card terms, then use Import Voice Model for a separate, deliberate import action only if you trust the publisher and file."
     except Exception as exc:
         logging.exception("Hugging Face model download failed")
         raise gr.Error(str(exc)) from exc
