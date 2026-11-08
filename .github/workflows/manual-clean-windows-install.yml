@@ -2,6 +2,35 @@ name: Manual clean Windows install
 
 on:
   workflow_dispatch:
+    inputs:
+      run_conversion:
+        description: "Also run one short real conversion (Demucs, RVC, mix) after install"
+        type: boolean
+        default: false
+      rights_confirmed:
+        description: "I am authorized to use the audio sample and voice model named below"
+        type: boolean
+        default: false
+      model_trust_confirmed:
+        description: "I trust this model publisher and .pth file; RVC may execute pickle payloads"
+        type: boolean
+        default: false
+      sample_url:
+        description: "HTTPS URL of a short audio sample you may use (maximum 50 MiB)"
+        type: string
+        default: ""
+      model_repo_id:
+        description: "Hugging Face model repo (owner/name)"
+        type: string
+        default: ""
+      model_filename:
+        description: "Exact .pth filename path inside that repo"
+        type: string
+        default: ""
+      clip_seconds:
+        description: "Seconds of audio to convert (1-30; Windows runner is CPU-only)"
+        type: string
+        default: "15"
 
 permissions:
   contents: read
@@ -19,6 +48,8 @@ jobs:
           Get-PSDrive -Name C | Select-Object Name, Used, Free
 
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
 
       - name: Run the real installer
         shell: pwsh
@@ -45,6 +76,23 @@ jobs:
           $env:PYTHONUNBUFFERED = '1'
           .\.venv\Scripts\python.exe scripts\smoke_test_app.py
 
+      - name: Real conversion check (opt-in)
+        if: ${{ inputs.run_conversion }}
+        shell: pwsh
+        env:
+          RIGHTS_CONFIRMED: ${{ inputs.rights_confirmed }}
+          MODEL_TRUST_CONFIRMED: ${{ inputs.model_trust_confirmed }}
+          SAMPLE_URL: ${{ inputs.sample_url }}
+          MODEL_REPO_ID: ${{ inputs.model_repo_id }}
+          MODEL_FILENAME: ${{ inputs.model_filename }}
+          CLIP_SECONDS: ${{ inputs.clip_seconds }}
+          GRADIO_ANALYTICS_ENABLED: "False"
+          PYTHONUNBUFFERED: "1"
+        run: |
+          $ErrorActionPreference = 'Stop'
+          .\.venv\Scripts\python.exe scripts\e2e_conversion.py
+          if ($LASTEXITCODE -ne 0) { throw "Real conversion check failed with exit code $LASTEXITCODE." }
+
       - name: Upload install logs and environment evidence
         if: always()
         uses: actions/upload-artifact@v4
@@ -53,5 +101,7 @@ jobs:
           path: |
             install.log
             logs/oneclick-cover.log
+            e2e-artifacts/e2e-report.json
+            e2e-artifacts/cover.wav
           if-no-files-found: ignore
           retention-days: 14
