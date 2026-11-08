@@ -11,7 +11,7 @@ def test_refresh_models_returns_component_configuration(monkeypatch):
     result = app.refresh_models()
 
     assert isinstance(result, gr.Dropdown)
-    assert result.choices == choices
+    assert result.choices == [(name, name) for name in choices]
     assert result.value == "voice-a.pth"
 
 
@@ -28,7 +28,7 @@ def test_import_voice_model_returns_updated_dropdown(monkeypatch, tmp_path):
     result, message = app.import_voice_model(str(source))
 
     assert isinstance(result, gr.Dropdown)
-    assert result.choices == ["voice.pth"]
+    assert result.choices == [("voice.pth", "voice.pth")]
     assert result.value == "voice.pth"
     assert (voice_dir / "voice.pth").read_bytes() == b"test model"
     assert "Imported voice.pth" in message
