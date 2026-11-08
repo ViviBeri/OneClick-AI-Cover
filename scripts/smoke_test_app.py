@@ -14,21 +14,25 @@ URL = "http://127.0.0.1:7860/"
 
 
 def check_imports() -> None:
-    modules = ("gradio", "demucs", "numpy", "soundfile", "imageio_ffmpeg", "torch", "torchaudio")
+    modules = ("gradio", "demucs", "numpy", "soundfile", "imageio_ffmpeg", "torch", "torchaudio", "torchcodec")
     for name in modules:
         __import__(name)
         print(f"IMPORT OK: {name}", flush=True)
 
     import torch
     import torchaudio
+    from importlib.metadata import version
 
-    if not torch.__version__.startswith("2.8.0"):
-        raise RuntimeError(f"Expected PyTorch 2.8.0, found {torch.__version__}")
-    if not torchaudio.__version__.startswith("2.8.0"):
-        raise RuntimeError(f"Expected torchaudio 2.8.0, found {torchaudio.__version__}")
+    if not torch.__version__.startswith("2.13.0"):
+        raise RuntimeError(f"Expected PyTorch 2.13.0, found {torch.__version__}")
+    if not torchaudio.__version__.startswith("2.11.1"):
+        raise RuntimeError(f"Expected torchaudio 2.11.1, found {torchaudio.__version__}")
+    torchcodec_version = version("torchcodec")
+    if not torchcodec_version.startswith("0.16.0"):
+        raise RuntimeError(f"Expected TorchCodec 0.16.0, found {torchcodec_version}")
     if torch.version.cuda is not None:
         raise RuntimeError(f"Expected CPU-only PyTorch, found CUDA build {torch.version.cuda}")
-    print(f"CPU PyTorch verified: torch {torch.__version__}, torchaudio {torchaudio.__version__}")
+    print(f"CPU PyTorch verified: torch {torch.__version__}, torchaudio {torchaudio.__version__}, TorchCodec {torchcodec_version}")
 
 
 def validate_page(status: int, body: str) -> None:
