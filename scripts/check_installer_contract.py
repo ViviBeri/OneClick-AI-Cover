@@ -43,6 +43,21 @@ require(installer.count("$ErrorActionPreference='Stop'") >= 2,
 require('if errorlevel 1 goto failed' in installer.lower(),
         "installer has explicit failure handling after setup commands")
 require(':failed' in installer.lower(), "installer has a failure exit path")
+require('UV_VERSION=0.13.7' in installer, "installer pins the uv runtime-manager version")
+require('UV_SHA256=0cdc5b38fe5a8168ed6a25814f5ba43c21d313dd3187314fccb37b7cec46e021' in installer,
+        "installer verifies the pinned uv archive SHA-256")
+require('download.pytorch.org/whl/cpu' in installer,
+        "installer uses the official PyTorch CPU wheel index")
+require('requirments_cpu_py312.local.txt' in installer,
+        "RVC dependencies are installed from a patched requirements copy")
+require('pypi.org/simple' in installer,
+        "RVC dependencies use official PyPI rather than upstream mirrors")
+require('scripts\\download_rvc_assets.py' in installer,
+        "installer downloads required HuBERT and RMVPE assets")
+require('torch==2.8.0' in project and 'torchaudio==2.8.0' in project,
+        "main app pins matching PyTorch and torchaudio versions")
+require('download_rvc_assets.py' in read("scripts/download_rvc_assets.py"),
+        "RVC asset downloader exists")
 require('SETUP_STAGE=' in installer, "installer tracks the current setup stage for diagnostics")
 require('SETUP FAILED during:' in installer, "installer reports which setup stage failed")
 require('docs/troubleshooting.md' in installer, "installer links to troubleshooting guidance on failure")
