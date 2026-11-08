@@ -81,5 +81,5 @@ def test_preflight_does_not_execute_pickle_reduce_payload(tmp_path):
 
     report = inspect_rvc_checkpoint(path)
 
-    assert "Static preflight" in report
+    assert "STATIC PREFLIGHT" in report
     assert not marker.exists()
