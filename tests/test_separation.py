@@ -84,7 +84,7 @@ def test_separate_vocals_auto_device_leaves_device_selection_to_demucs(monkeypat
     ("kwargs", "message"),
     [
         ({"device": "tpu"}, "device must be one of"),
-        ({"segment": 8.0}, "segment size must be a whole number"),
+        ({"segment": 8.0}, "segment size must be between"),
         ({"segment": 4.5}, "segment size must be a whole number"),
         ({"segment": float("nan")}, "segment size must be between"),
         ({"timeout": 0}, "timeout must be a positive"),
