@@ -36,16 +36,16 @@ def save_audio_without_torchcodec(
     if suffix not in {".wav", ".flac"}:
         raise ValueError(f"Invalid suffix for path: {suffix}")
 
+    if bits_per_sample not in {16, 24, 32}:
+        raise ValueError(f"Unsupported PCM bit depth: {bits_per_sample}")
     if suffix == ".wav" and as_float:
         subtype = "FLOAT"
     elif bits_per_sample == 16:
         subtype = "PCM_16"
     elif bits_per_sample == 24 or suffix == ".flac":
         subtype = "PCM_24"
-    elif bits_per_sample == 32:
-        subtype = "PCM_32"
     else:
-        raise ValueError(f"Unsupported PCM bit depth: {bits_per_sample}")
+        subtype = "PCM_32"
 
     audio = wav.detach().cpu().transpose(0, 1).numpy()
     sf.write(str(destination), audio, samplerate, subtype=subtype)
