@@ -4,6 +4,7 @@ from __future__ import annotations
 import os
 import platform
 import shutil
+import subprocess
 from pathlib import Path
 
 from scripts.download_rvc_assets import missing_rvc_assets
@@ -11,6 +12,27 @@ from oneclick_cover.settings import ROOT
 
 MIN_RAM_GB = 8
 MIN_FREE_DISK_GB = 10
+
+
+def _nvidia_info() -> str | None:
+    executable = shutil.which("nvidia-smi")
+    if not executable:
+        return None
+    try:
+        result = subprocess.run(
+            [
+                executable,
+                "--query-gpu=name,memory.total,driver_version",
+                "--format=csv,noheader",
+            ],
+            capture_output=True,
+            text=True,
+            timeout=5,
+            check=True,
+        )
+    except (OSError, subprocess.SubprocessError):
+        return "NVIDIA utility found, but GPU details could not be read"
+    return result.stdout.strip() or "NVIDIA utility found, but no GPU was reported"
 
 
 def _total_ram_bytes() -> int | None:
@@ -50,10 +72,12 @@ def collect_system_info(path: Path | None = None) -> dict:
     return {
         "platform": platform.platform(),
         "machine": platform.machine(),
+        "cpu": platform.processor() or "unknown",
         "cpu_threads": os.cpu_count(),
         "ram_bytes": _total_ram_bytes(),
         "free_disk_bytes": free_disk,
         "nvidia_driver": shutil.which("nvidia-smi") is not None,
+        "gpu_info": _nvidia_info(),
         "missing_assets": missing_rvc_assets(ROOT / "vendor" / "rvc"),
     }
 
@@ -66,10 +90,10 @@ def format_system_report(info: dict) -> str:
     lines = [
         "## System check",
         f"- OS: {info['platform']} ({info['machine']})",
-        f"- CPU threads: {info['cpu_threads'] or 'unknown'}",
+        f"- CPU: {info.get('cpu') or 'unknown'} ({info['cpu_threads'] or 'unknown'} threads)",
         f"- RAM: {_gb(info['ram_bytes'])}",
         f"- Free disk space here: {_gb(info['free_disk_bytes'])}",
-        "- NVIDIA driver: " + ("detected" if info["nvidia_driver"] else "not detected (CPU mode)"),
+        "- GPU: " + (info.get("gpu_info") or "No NVIDIA GPU detected (CPU mode)"),
     ]
     notes = []
     ram = info["ram_bytes"]
