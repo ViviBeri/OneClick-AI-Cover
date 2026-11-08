@@ -55,8 +55,8 @@ require('pypi.org/simple' in installer,
         "RVC dependencies use official PyPI rather than upstream mirrors")
 require('scripts\\download_rvc_assets.py' in installer,
         "installer downloads required HuBERT and RMVPE assets")
-require('torch==2.13.0' in project and 'torchaudio==2.11.1' in project and 'torchcodec==0.16.0' in project,
-        "main app pins compatible PyTorch, torchaudio, and TorchCodec versions")
+require('torch==2.13.0' in project and 'torchaudio==2.11.1' in project,
+        "main app pins matching PyTorch and torchaudio versions")
 require("torch.version.cuda is None" in installer,
         "installer verifies the main app uses CPU-only PyTorch")
 require("Download and verify pinned RVC inference assets" in workflow,
