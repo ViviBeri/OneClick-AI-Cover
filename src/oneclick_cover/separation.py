@@ -35,13 +35,13 @@ def separate_vocals(
     try:
         segment_value = float(segment)
     except (TypeError, ValueError) as exc:
-        raise ValueError("Demucs segment size must be a whole number between 2 and 7 seconds.") from exc
+        raise ValueError("Demucs segment size must be between 2 and 7 seconds and must be a whole number.") from exc
     if (
         not math.isfinite(segment_value)
         or not segment_value.is_integer()
         or not 2 <= segment_value <= 7
     ):
-        raise ValueError("Demucs segment size must be a whole number between 2 and 7 seconds.")
+        raise ValueError("Demucs segment size must be between 2 and 7 seconds and must be a whole number.")
     segment = int(segment_value)
 
     if isinstance(shifts, bool) or not isinstance(shifts, int) or shifts < 0:
