@@ -39,8 +39,8 @@ echo [3/7] Creating the app environment...
 if not exist ".venv\Scripts\python.exe" "%UV_EXE%" venv --python 3.11 .venv
 if errorlevel 1 goto failed
 set "SETUP_STAGE=Installing pinned CPU PyTorch for Demucs"
-echo Installing CPU PyTorch 2.8.0 and torchaudio 2.8.0 from the official PyTorch wheel index...
-"%UV_EXE%" pip install --python ".venv\Scripts\python.exe" --index-url https://download.pytorch.org/whl/cpu torch==2.8.0 torchaudio==2.8.0
+echo Installing CPU PyTorch 2.13.0, torchaudio 2.11.1, and TorchCodec 0.16.0 from the official PyTorch wheel index...
+"%UV_EXE%" pip install --python ".venv\Scripts\python.exe" --index-url https://download.pytorch.org/whl/cpu torch==2.13.0 torchaudio==2.11.1 torchcodec==0.16.0
 if errorlevel 1 goto failed
 "%UV_EXE%" pip install --python ".venv\Scripts\python.exe" --index-url https://pypi.org/simple -e .
 if errorlevel 1 goto failed
