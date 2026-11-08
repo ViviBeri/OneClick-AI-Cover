@@ -37,7 +37,7 @@ def test_separate_vocals_streams_progress_and_uses_low_memory_options(monkeypatc
         result_dir.mkdir(parents=True)
         (result_dir / "vocals.wav").write_bytes(b"vocals")
         (result_dir / "no_vocals.wav").write_bytes(b"instrumental")
-        return FakeProcess("  25%|##\\r 100%|########\\rDone\\n")
+        return FakeProcess("  25%|##\r 100%|########\rDone\n")
 
     monkeypatch.setattr(separation.subprocess, "Popen", fake_popen)
     updates = []
@@ -71,7 +71,7 @@ def test_separate_vocals_auto_device_leaves_device_selection_to_demucs(monkeypat
         result_dir.mkdir(parents=True)
         (result_dir / "vocals.wav").touch()
         (result_dir / "no_vocals.wav").touch()
-        return FakeProcess("Done\\n")
+        return FakeProcess("Done\n")
 
     monkeypatch.setattr(separation.subprocess, "Popen", fake_popen)
     separation.separate_vocals(tmp_path / "song.wav", tmp_path / "job", device="auto")
@@ -96,7 +96,7 @@ def test_separate_vocals_reports_demucs_failure_output(monkeypatch, tmp_path):
     monkeypatch.setattr(
         separation.subprocess,
         "Popen",
-        lambda *args, **kwargs: FakeProcess("model download failed\\n", returncode=2),
+        lambda *args, **kwargs: FakeProcess("model download failed\n", returncode=2),
     )
     with pytest.raises(RuntimeError, match="model download failed"):
         separation.separate_vocals(tmp_path / "song.wav", tmp_path / "job")
