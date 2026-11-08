@@ -55,7 +55,7 @@ def test_separate_vocals_streams_progress_and_uses_low_memory_options(monkeypatc
     assert vocals.read_bytes() == b"vocals"
     assert instrumental.read_bytes() == b"instrumental"
     command = commands[0]
-    assert command[1].endswith("scripts/demucs_runner.py")
+    assert Path(command[1]).name == "demucs_runner.py"
     assert command[command.index("--segment") + 1] == "4"
     assert command[command.index("--shifts") + 1] == "0"
     assert command[command.index("-d") + 1] == "cpu"
