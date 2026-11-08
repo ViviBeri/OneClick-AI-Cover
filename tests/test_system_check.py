@@ -41,4 +41,4 @@ def test_report_handles_unknown_values():
         _info(ram_bytes=None, free_disk_bytes=None, cpu_threads=None)
     )
     assert "RAM: unknown" in report
-    assert "CPU threads: unknown" in report
+    assert "unknown threads" in report
