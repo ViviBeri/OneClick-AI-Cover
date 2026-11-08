@@ -8,6 +8,8 @@
 - Date (UTC):
 - Issue: #1 / #2 / #3 / other
 - Windows edition/version/build:
+- Pre-install `python --version` / `where.exe python` output:
+- Pre-install `py --version` / `where.exe py` output:
 - Architecture: x64 / ARM64 / other
 - CPU:
 - RAM:
@@ -53,6 +55,8 @@
 - Model compatibility/version (no model file attached):
 - Input fixture description (no copyrighted/private file attached):
 - Install duration:
+- Manually installed prerequisites (name, version, source; or NONE):
+- System Check tab result (runtime, PyTorch/device, FFmpeg, model assets):
 - First launch duration:
 - Per-stage timings:
 - Sanitized log / screenshot / ffprobe artifact links:
