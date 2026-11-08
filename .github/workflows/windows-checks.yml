@@ -27,6 +27,24 @@ jobs:
         run: python -m compileall -q app.py src tests scripts
       - name: Run unit tests
         run: python -m pytest -q
+      - name: Download and verify pinned RVC inference assets
+        if: matrix.python-version == '3.11'
+        shell: pwsh
+        env:
+          HF_HUB_DISABLE_TELEMETRY: "1"
+        run: |
+          $rvcRoot = Join-Path $env:RUNNER_TEMP "rvc-assets"
+          python scripts/download_rvc_assets.py --rvc-root $rvcRoot
+          $required = @(
+            "assets/hubert_base/config.json",
+            "assets/hubert_base/preprocessor_config.json",
+            "assets/hubert_base/pytorch_model.bin",
+            "assets/rmvpe/rmvpe.pt"
+          )
+          foreach ($relative in $required) {
+            $path = Join-Path $rvcRoot $relative
+            if (-not (Test-Path $path -PathType Leaf)) { throw "Missing RVC inference asset: $relative" }
+          }
       - name: Check core dependency imports and launch Gradio headlessly
         run: python scripts/smoke_test_app.py
       - name: Check Windows installer contract
