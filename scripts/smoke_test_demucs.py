@@ -33,7 +33,7 @@ def main() -> int:
         source = root / "synthetic-input.wav"
         sf.write(source, audio, sample_rate, subtype="PCM_16")
 
-        vocals, instrumental = separate_vocals(source, root / "job")
+        vocals, instrumental = separate_vocals(source, root / "job", shifts=0)
         for stem in (vocals, instrumental):
             if not stem.is_file() or stem.stat().st_size == 0:
                 raise RuntimeError(f"Demucs did not create a non-empty stem: {stem}")
