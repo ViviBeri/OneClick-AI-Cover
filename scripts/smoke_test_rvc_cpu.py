@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import argparse
 import os
+import re
 import subprocess
 from pathlib import Path
 
@@ -72,7 +73,7 @@ def run_cpu_smoke_test(input_path: Path, model_path: Path, output_path: Path) ->
     diagnostic = (result.stdout or "") + "\n" + (result.stderr or "")
     if result.returncode:
         raise RuntimeError("RVC CPU smoke test failed:\n" + diagnostic[-8000:])
-    if "cpu" not in diagnostic.lower():
+    if not re.search(r"(?:当前设备|current device)\\s*[:：]\\s*cpu", diagnostic, re.IGNORECASE):
         raise RuntimeError(
             "RVC did not report CPU as its inference device. "
             "This test requires CPU execution. Backend output:\n" + diagnostic[-4000:]
