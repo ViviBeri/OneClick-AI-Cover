@@ -47,7 +47,7 @@ def test_separate_vocals_streams_progress_and_uses_low_memory_options(monkeypatc
         tmp_path / "job",
         progress=lambda fraction, message: updates.append((fraction, message)),
         device="cpu",
-        segment=4.5,
+        segment=4,
         timeout=30,
         shifts=0,
     )
@@ -55,7 +55,7 @@ def test_separate_vocals_streams_progress_and_uses_low_memory_options(monkeypatc
     assert vocals.read_bytes() == b"vocals"
     assert instrumental.read_bytes() == b"instrumental"
     command = commands[0]
-    assert command[command.index("--segment") + 1] == "4.5"
+    assert command[command.index("--segment") + 1] == "4"
     assert command[command.index("--shifts") + 1] == "0"
     assert command[command.index("-d") + 1] == "cpu"
     assert command[-1] == str(tmp_path / "song.wav")
@@ -84,7 +84,8 @@ def test_separate_vocals_auto_device_leaves_device_selection_to_demucs(monkeypat
     ("kwargs", "message"),
     [
         ({"device": "tpu"}, "device must be one of"),
-        ({"segment": 8.0}, "segment size must be between"),
+        ({"segment": 8.0}, "segment size must be a whole number"),
+        ({"segment": 4.5}, "segment size must be a whole number"),
         ({"segment": float("nan")}, "segment size must be between"),
         ({"timeout": 0}, "timeout must be a positive"),
         ({"shifts": -1}, "shifts must be a non-negative integer"),
