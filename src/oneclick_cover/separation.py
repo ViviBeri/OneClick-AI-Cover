@@ -145,7 +145,17 @@ def separate_vocals(
             f"Demucs separation exceeded the {int(timeout)}-second timeout and was stopped.{suffix}"
         )
 
-    return_code = process.wait()
+    try:
+        return_code = process.wait(timeout=max(0.01, deadline - time.monotonic()))
+    except subprocess.TimeoutExpired:
+        process.kill()
+        process.wait()
+        reader.join(timeout=1)
+        detail = output_tail.strip()[-1500:]
+        suffix = f" Last output: {detail}" if detail else ""
+        raise TimeoutError(
+            f"Demucs separation exceeded the {int(timeout)}-second timeout and was stopped.{suffix}"
+        )
     reader.join(timeout=1)
     if return_code:
         detail = output_tail.strip()[-4000:] or "No diagnostic output"
