@@ -69,8 +69,8 @@ require((ROOT / "scripts" / "download_rvc_assets.py").is_file(),
 require('SETUP_STAGE=' in installer, "installer tracks the current setup stage for diagnostics")
 require('SETUP FAILED during:' in installer, "installer reports which setup stage failed")
 require('docs/troubleshooting.md' in installer, "installer links to troubleshooting guidance on failure")
-require(re.search(r'requires-python\s*=\s*">=3\.10,<3\.12"', project) is not None,
-        "project Python range matches the main app environment")
+require(re.search(r'requires-python\s*=\s*">=3\.11,<3\.13"', project) is not None,
+        "project Python range matches the supported Python 3.11–3.12 app environment")
 require('.venv\\Scripts\\python.exe' in launcher and 'app.py' in launcher,
         "launcher checks the managed app interpreter and starts app.py")
 require('exit /b 1' in launcher.lower(),
