@@ -90,7 +90,7 @@ echo [6/7] Downloading pinned HuBERT and RMVPE assets from the public Hugging Fa
 if errorlevel 1 goto failed
 set "SETUP_STAGE=Checking app dependencies"
 echo [7/7] Checking app imports...
-".venv\Scripts\python.exe" -c "import gradio, demucs, soundfile; print('UI and separation dependencies are available.')"
+".venv\Scripts\python.exe" -c "import gradio, demucs, soundfile, torch, torchaudio; assert torch.__version__.startswith('2.8.0'); assert torchaudio.__version__.startswith('2.8.0'); assert torch.version.cuda is None; print('UI, Demucs, and pinned CPU PyTorch dependencies are available.')"
 if errorlevel 1 goto failed
 echo.
 echo Setup completed. Double-click run.bat to launch OneClick-AI-Cover.
