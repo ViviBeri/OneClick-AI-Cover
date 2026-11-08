@@ -14,10 +14,12 @@ ASSETS = {
     "hubert_base/config.json": {
         "destination": Path("assets/hubert_base/config.json"),
         "size": 1492,
+        "sha256": "0346950779dfb7f9316fa74ed846e2b8a22a08eedfdc5387b73f327cb1a4a7cf",
     },
     "hubert_base/preprocessor_config.json": {
         "destination": Path("assets/hubert_base/preprocessor_config.json"),
         "size": 225,
+        "sha256": "7c1976a680fb7acc757cd36fb08eef878fa36c70b4c9d2d595df9c608bbbbf0e",
     },
     "hubert_base/pytorch_model.bin": {
         "destination": Path("assets/hubert_base/pytorch_model.bin"),
@@ -102,7 +104,6 @@ def download_rvc_assets(
     return installed
 
 
-
 def missing_rvc_assets(rvc_root: Path) -> list[str]:
     """Return required backend-relative paths that are absent or fail integrity checks."""
     root = Path(rvc_root)
@@ -119,8 +120,8 @@ def main() -> int:
     args = parser.parse_args()
     paths = download_rvc_assets(args.rvc_root)
     for path in paths:
-        print(f"READY {path} ({path.stat().st_size:,} bytes)")
-    print("HuBERT and RMVPE inference assets are ready.")
+        print(f"VERIFIED {path} ({path.stat().st_size:,} bytes; SHA-256 OK)")
+    print("All four HuBERT and RMVPE inference assets passed SHA-256 verification.")
     return 0
 
 
