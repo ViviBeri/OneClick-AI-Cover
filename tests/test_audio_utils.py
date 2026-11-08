@@ -395,3 +395,39 @@ def test_mix_audio_rejects_non_finite_gain_and_clears_stale_output(tmp_path):
         audio_utils.mix_audio(vocal, instrumental, output, instrumental_gain=math.nan)
 
     assert not output.exists()
+
+
+def test_managed_ffmpeg_mp3_round_trip_without_system_ffmpeg(monkeypatch, tmp_path):
+    import numpy as np
+    import pytest
+
+    # Force _ffmpeg_path() to use the imageio-ffmpeg binary shipped with the
+    # application instead of an FFmpeg executable installed on the runner.
+    monkeypatch.setattr(audio_utils.shutil, "which", lambda _name: None)
+    ffmpeg = audio_utils._ffmpeg_path()
+    if not ffmpeg:
+        pytest.fail("The managed imageio-ffmpeg executable is unavailable")
+
+    sample_rate = 16000
+    duration = 1.0
+    time = np.arange(int(sample_rate * duration), dtype=np.float32) / sample_rate
+    source = tmp_path / "source.wav"
+    mp3 = tmp_path / "round-trip.mp3"
+    restored = tmp_path / "restored.wav"
+    sf.write(source, 0.2 * np.sin(2 * np.pi * 440 * time), sample_rate)
+
+    audio_utils.export_mp3(source, mp3)
+    assert mp3.is_file() and mp3.stat().st_size > 0
+
+    audio_utils.transcode_to_wav(mp3, restored)
+    assert restored.is_file() and restored.stat().st_size > 0
+
+    info = sf.info(restored)
+    assert info.samplerate == 44100
+    assert info.channels == 2
+    assert info.duration == pytest.approx(duration, abs=0.1)
+
+    restored_audio, _ = sf.read(restored, dtype="float32")
+    assert restored_audio.size > 0
+    assert np.isfinite(restored_audio).all()
+    assert float(np.max(np.abs(restored_audio))) > 0.01
