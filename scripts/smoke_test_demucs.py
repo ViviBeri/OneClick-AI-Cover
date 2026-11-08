@@ -33,21 +33,39 @@ def main() -> int:
         source = root / "synthetic-input.wav"
         sf.write(source, audio, sample_rate, subtype="PCM_16")
 
-        vocals, instrumental = separate_vocals(source, root / "job", shifts=0)
+        def report_progress(fraction: float, message: str) -> None:
+            if message:
+                print(f"DEMUCS: {fraction:.0%} {message}", flush=True)
+
+        vocals, instrumental = separate_vocals(
+            source, root / "job", progress=report_progress, shifts=0
+        )
         for stem in (vocals, instrumental):
             if not stem.is_file() or stem.stat().st_size == 0:
                 raise RuntimeError(f"Demucs did not create a non-empty stem: {stem}")
             info = sf.info(stem)
             if info.frames <= 0 or info.samplerate <= 0 or info.channels <= 0:
                 raise RuntimeError(f"Demucs created invalid audio metadata: {stem}")
+            if abs(info.duration - duration_seconds) > 0.1:
+                raise RuntimeError(
+                    f"Demucs stem duration is unexpected: {stem}; "
+                    f"expected about {duration_seconds}s, got {info.duration:.2f}s"
+                )
             samples, _ = sf.read(stem, dtype="float32", always_2d=True)
             if not np.isfinite(samples).all():
                 raise RuntimeError(f"Demucs created non-finite audio samples: {stem}")
+            rms = float(np.sqrt(np.mean(np.square(samples))))
+            peak = float(np.max(np.abs(samples)))
+            if rms <= 1e-5 or peak <= 1e-4:
+                raise RuntimeError(
+                    f"Demucs created a silent or near-silent stem: {stem}; "
+                    f"RMS={rms:.8f}, peak={peak:.8f}"
+                )
             print(
                 f"DEMUCS STEM OK: {stem.name}; "
                 f"duration={info.duration:.2f}s; "
                 f"sample_rate={info.samplerate}; channels={info.channels}; "
-                f"bytes={stem.stat().st_size}",
+                f"RMS={rms:.6f}; peak={peak:.6f}; bytes={stem.stat().st_size}",
                 flush=True,
             )
 
