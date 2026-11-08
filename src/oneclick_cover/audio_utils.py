@@ -16,7 +16,13 @@ def _ffmpeg_path() -> str | None:
         return None
 
 def _run(command: list[str]) -> None:
-    result = subprocess.run(command, capture_output=True, text=True, check=False)
+    try:
+        result = subprocess.run(command, capture_output=True, text=True, check=False)
+    except OSError as exc:
+        raise RuntimeError(
+            f"Could not start the FFmpeg executable '{command[0]}': {exc}. "
+            "Re-run install.bat to repair the managed FFmpeg helper."
+        ) from exc
     if result.returncode:
         detail = (result.stderr or result.stdout or "No diagnostic output")[-3500:]
         raise RuntimeError(f"Command failed ({result.returncode}): {' '.join(command[:4])}\n{detail}")

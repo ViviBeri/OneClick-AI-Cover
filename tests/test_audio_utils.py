@@ -431,3 +431,52 @@ def test_managed_ffmpeg_mp3_round_trip_without_system_ffmpeg(monkeypatch, tmp_pa
     assert restored_audio.size > 0
     assert np.isfinite(restored_audio).all()
     assert float(np.max(np.abs(restored_audio))) > 0.01
+
+def test_run_reports_unavailable_or_corrupt_ffmpeg_executable(monkeypatch):
+    import pytest
+
+    def fail_to_start(*args, **kwargs):
+        raise FileNotFoundError("synthetic missing FFmpeg executable")
+
+    monkeypatch.setattr(audio_utils.subprocess, "run", fail_to_start)
+
+    with pytest.raises(RuntimeError, match="Could not start the FFmpeg executable") as error:
+        audio_utils._run(["managed-ffmpeg.exe", "-version"])
+
+    assert "Re-run install.bat" in str(error.value)
+    assert isinstance(error.value.__cause__, FileNotFoundError)
+
+
+def test_ffmpeg_path_handles_managed_helper_download_failure(monkeypatch):
+    import sys
+    from types import SimpleNamespace
+
+    def fail_to_get_executable():
+        raise OSError("synthetic restricted-network/cache failure")
+
+    monkeypatch.setitem(
+        sys.modules,
+        "imageio_ffmpeg",
+        SimpleNamespace(get_ffmpeg_exe=fail_to_get_executable),
+    )
+
+    assert audio_utils._ffmpeg_path() is None
+
+
+def test_mp3_export_removes_stale_output_when_ffmpeg_cannot_start(monkeypatch, tmp_path):
+    import pytest
+
+    monkeypatch.setattr(audio_utils, "_ffmpeg_path", lambda: "managed-ffmpeg.exe")
+
+    def fail_to_start(*args, **kwargs):
+        raise FileNotFoundError("synthetic damaged FFmpeg cache")
+
+    monkeypatch.setattr(audio_utils.subprocess, "run", fail_to_start)
+    destination = tmp_path / "output.mp3"
+    destination.write_bytes(b"stale MP3 from previous run")
+
+    with pytest.raises(RuntimeError, match="Could not start the FFmpeg executable"):
+        audio_utils.export_mp3(tmp_path / "input.wav", destination)
+
+    assert not destination.exists()
+
