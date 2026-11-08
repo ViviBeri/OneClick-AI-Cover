@@ -24,6 +24,9 @@ Review the [Windows Checks workflow](../.github/workflows/windows-checks.yml) an
 
 ## Manual clean-machine test plan
 
+> **Important distinction:** `.github/workflows/manual-clean-windows-install.yml` is a hosted-runner installation integration check, not proof of a pristine Windows installation. GitHub-hosted `windows-latest` images are preconfigured and may include system Python and other developer tools. The workflow verifies that this repository's installer provisions its managed runtime and launches the app on that runner; it does not establish that the host started without Python, reproduce a first-boot consumer PC, or satisfy the fresh-machine PASS criteria below. Keep Issue #1 open until a tester completes the documented fresh Windows VM, Windows Sandbox, or physical-machine procedure and attaches the required evidence. Do not relabel a hosted-runner pass as a clean-machine certification.
+
+
 ### Section 1 — Test environment and prerequisites
 
 Use a fresh Windows x64 virtual machine or physical machine with no Python installed. A fresh VM counts; testers do not need spare physical hardware. **Target matrix:** Windows 11 24H2 x64 is the primary baseline; Windows 11 23H2 x64 and Windows 10 22H2 x64 are additional legacy-compatibility targets where a tester has access. Record exact edition/version/build because support status differs by edition and servicing channel. ARM64 and non-admin installation are best-effort compatibility checks: record results if available, but their absence alone does not block the baseline verification. Record CPU, RAM, free disk space, GPU/driver if applicable, and network type/restrictions.
