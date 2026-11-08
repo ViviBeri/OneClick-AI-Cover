@@ -7,7 +7,7 @@ import tempfile
 import time
 from pathlib import Path
 
-from playwright.sync_api import sync_playwright
+from playwright.sync_api import expect, sync_playwright
 
 ROOT = Path(__file__).resolve().parents[1]
 URL = "http://127.0.0.1:7860/"
@@ -17,6 +17,10 @@ def main() -> int:
     env = os.environ.copy()
     env["GRADIO_ANALYTICS_ENABLED"] = "False"
     env["PYTHONUNBUFFERED"] = "1"
+    imported_model = ROOT / "models" / "voices" / "browser-smoke-model.pth"
+    imported_model.parent.mkdir(parents=True, exist_ok=True)
+    if imported_model.exists():
+        raise RuntimeError(f"Refusing to overwrite existing test model: {imported_model}")
     process = subprocess.Popen(
         [sys.executable, str(ROOT / "app.py")],
         cwd=ROOT,
@@ -25,10 +29,6 @@ def main() -> int:
         stderr=subprocess.STDOUT,
         text=True,
     )
-    imported_model = ROOT / "models" / "voices" / "browser-smoke-model.pth"
-    imported_model.parent.mkdir(parents=True, exist_ok=True)
-    if imported_model.exists():
-        raise RuntimeError(f"Refusing to overwrite existing test model: {imported_model}")
 
     try:
         deadline = time.monotonic() + 60
@@ -58,13 +58,16 @@ def main() -> int:
                 candidate.write_bytes(b"browser callback smoke test" + bytes(2048))
                 upload.set_input_files(str(candidate))
                 page.get_by_role("button", name="Import model").click()
-                page.get_by_text("Imported browser-smoke-model.pth", exact=False).wait_for(
-                    timeout=15000
+                expect(page.get_by_label("Import status")).to_have_value(
+                    "Imported browser-smoke-model.pth. You can now select it under Generate Cover.",
+                    timeout=15000,
                 )
 
             page.get_by_role("tab", name="Generate Cover").click()
             page.get_by_role("button", name="Refresh models").click()
-            page.get_by_text("browser-smoke-model.pth", exact=True).wait_for(timeout=15000)
+            expect(page.get_by_label("RVC voice model (.pth)")).to_have_value(
+                "browser-smoke-model.pth", timeout=15000
+            )
             print(
                 "GRADIO 6 BROWSER SMOKE PASSED: import callback copied the test model; "
                 "refresh callback exposed it in the voice-model selector.",
