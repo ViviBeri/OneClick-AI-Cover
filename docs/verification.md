@@ -34,6 +34,17 @@ Use a fresh Windows x64 virtual machine or physical machine with no Python insta
 
 **Hyper-V / VM option:** Use an isolated fresh Windows VM if Sandbox is unavailable. A new VM snapshot with no Python installed is acceptable. Do not use a work device or VM in a way that violates organization policy.
 
+Before downloading or installing anything, open PowerShell and record the results of:
+
+```powershell
+python --version
+where.exe python
+py --version
+where.exe py
+```
+
+A command-not-found result is expected for an absent runtime. Record the exact output and exit status for each command; if a command resolves, record its executable path and version. Do not install or remove Python just to force a desired result. This preflight is evidence of the starting state, not a substitute for recording the managed runtime installed by the app.
+
 **Pass criteria:** The report records the environment fields above, and the tester confirms Python was not installed before the test. Otherwise mark BLOCKED, not PASS.
 
 ### Section 2 — Download and integrity check
@@ -58,10 +69,10 @@ signtool verify /pa /v .\installer.exe
 
 1. Extract the ZIP to a writable path containing spaces, e.g. `C:\Users\Test User\OneClick Cover Test\`. If practical, repeat with non-ASCII characters in the path.
 2. Run `install.bat` as a **standard non-administrator user**. Do not elevate unless a failure is being investigated.
-3. Save the complete console output and record start/end time, network conditions, warnings, and first failure.
-4. Launch with `run.bat`. Confirm the local Gradio interface loads at its local address and does not create public sharing or a tunnel.
-5. Confirm the app can start again after a clean reboot.
-
+3. Save the complete console output and record the start/end timestamps and total install duration, network conditions, warnings, any prerequisite installed manually (including the exact Visual C++ Redistributable version/source if applicable), and the first failure. Do not bypass SmartScreen or organizational security controls.
+4. After launch, open the **System Check** tab. Record the displayed Python/runtime, PyTorch/device, FFmpeg, and model-asset status; redact local usernames and private paths in screenshots.
+5. Confirm the local Gradio interface loads at its local address and does not create public sharing or a tunnel.
+6. Confirm the app can start again after a clean reboot.
 **Pass criteria:** Installation exits successfully, required managed runtime/dependencies are present, the UI loads locally within 60 seconds after `run.bat` starts (excluding first-time install/download time), and logs contain no unhandled startup error. Record whether the test used an administrator or standard account. Standard non-admin installation is best-effort and should be reported when available; if it is not tested, mark it NOT TESTED rather than blocking the primary baseline. If a different launch-time threshold is required by the environment, record the measured time and reason; do not silently change the threshold.
 
 Record any Microsoft Defender SmartScreen warning exactly. Do not advise contributors to bypass organizational security policy. If a warning blocks execution, mark the result BLOCKED/FAIL as appropriate and attach a screenshot with personal information redacted.
