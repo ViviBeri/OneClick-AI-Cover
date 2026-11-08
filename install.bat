@@ -24,18 +24,18 @@ set "RVC_DIR=%CD%\vendor\rvc"
 set "SETUP_STAGE=Preparing folders"
 if not exist "%UV_EXE%" (
   set "SETUP_STAGE=Downloading the uv runtime manager"
-  echo [1/6] Downloading uv runtime manager...
+  echo [1/7] Downloading uv runtime manager...
   powershell -NoProfile -ExecutionPolicy Bypass -Command "$ErrorActionPreference='Stop'; $ProgressPreference='SilentlyContinue'; [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; Invoke-WebRequest -Uri 'https://github.com/astral-sh/uv/releases/download/%UV_VERSION%/uv-x86_64-pc-windows-msvc.zip' -OutFile '%CD%\.runtime\uv.zip'; $actual=(Get-FileHash '%CD%\.runtime\uv.zip' -Algorithm SHA256).Hash.ToLower(); if ($actual -ne '%UV_SHA256%') { throw 'uv archive SHA-256 mismatch' }; Expand-Archive -Force '%CD%\.runtime\uv.zip' '%CD%\.runtime\uv-unpack'; Copy-Item '%CD%\.runtime\uv-unpack\uv.exe' '%UV_EXE%' -Force"
   if errorlevel 1 goto failed
 )
 set "SETUP_STAGE=Installing managed Python 3.10 and 3.12"
-echo [2/6] Installing managed Python 3.10 for the main app and Python 3.12 for RVC...
+echo [2/7] Installing managed Python 3.10 for the main app and Python 3.12 for RVC...
 "%UV_EXE%" python install 3.10
 if errorlevel 1 goto failed
 "%UV_EXE%" python install 3.12
 if errorlevel 1 goto failed
 set "SETUP_STAGE=Creating the main app environment and installing dependencies"
-echo [3/6] Creating the app environment...
+echo [3/7] Creating the app environment...
 if not exist ".venv\Scripts\python.exe" "%UV_EXE%" venv --python 3.10 .venv
 if errorlevel 1 goto failed
 set "SETUP_STAGE=Installing pinned CPU PyTorch for Demucs"
@@ -46,7 +46,7 @@ if errorlevel 1 goto failed
 if errorlevel 1 goto failed
 if not exist "%RVC_DIR%\webui.py" (
   set "SETUP_STAGE=Downloading the pinned RVC backend"
-  echo [4/6] Downloading pinned RVC inference backend...
+  echo [4/7] Downloading pinned RVC inference backend...
   if exist "%RVC_DIR%" rmdir /s /q "%RVC_DIR%"
   powershell -NoProfile -ExecutionPolicy Bypass -Command "$ErrorActionPreference='Stop'; $ProgressPreference='SilentlyContinue'; [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; Invoke-WebRequest -Uri 'https://github.com/RVC-Project/Retrieval-based-Voice-Conversion-WebUI/archive/%RVC_COMMIT%.zip' -OutFile '%CD%\.runtime\rvc.zip'; Expand-Archive -Force '%CD%\.runtime\rvc.zip' '%CD%\.runtime\rvc-unpack'; $src=Get-ChildItem '%CD%\.runtime\rvc-unpack' -Directory | Select-Object -First 1; Move-Item $src.FullName '%RVC_DIR%'"
   if errorlevel 1 goto failed
@@ -62,7 +62,7 @@ if not exist "%RVC_DIR%\infer\cli.py" (
   goto failed
 )
 set "SETUP_STAGE=Installing RVC Python 3.12 dependencies"
-echo [5/6] Creating the separate RVC Python 3.12 environment...
+echo [5/7] Creating the separate RVC Python 3.12 environment...
 if not exist "%RVC_DIR%\.venv\Scripts\python.exe" (
   pushd "%RVC_DIR%"
   "%UV_EXE%" venv --python 3.12 .venv
