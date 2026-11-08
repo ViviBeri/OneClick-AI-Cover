@@ -11,6 +11,7 @@ from oneclick_cover.conversion import convert_voice
 from oneclick_cover.training import launch_training_ui
 from oneclick_cover.dataset import prepare_recordings
 from oneclick_cover.settings import ROOT
+from oneclick_cover.system_check import collect_system_info, format_system_report
 UNVERIFIED_MODEL_DIR = ROOT / "models" / "unverified"
 for folder in (VOICE_DIR, OUTPUT_DIR, LOG_DIR, UNVERIFIED_MODEL_DIR): folder.mkdir(parents=True, exist_ok=True)
 logging.basicConfig(filename=LOG_DIR / "oneclick-cover.log", level=logging.INFO)
@@ -63,6 +64,9 @@ def download_hf_model(repo_id, filename, confirmed):
     except Exception as exc:
         logging.exception("Hugging Face model download failed")
         raise gr.Error(str(exc)) from exc
+
+def run_system_check():
+    return format_system_report(collect_system_info())
 
 def prepare_training_dataset(uploaded_files, dataset_name, progress=gr.Progress()):
     try:
@@ -138,18 +142,9 @@ Upload recordings of your own voice, or recordings you have explicit permission 
             dataset_path=gr.Textbox(label="Prepared dataset path (copy into RVC training UI)",interactive=False)
             dataset_status=gr.Textbox(label="Preparation status",interactive=False)
             prepare_button.click(fn=prepare_training_dataset,inputs=[recording_files,dataset_name],outputs=[dataset_path,dataset_status])
-        with gr.Tab("PC Compatibility"):
-            gr.Markdown("""## Your PC: Windows 10, 6 GB RAM, Intel Core 2 Duo E7500, Intel G41 graphics
-
-**Recommended approach:** use this PC for recording preparation and app control, not full RVC model training. Training is likely to be extremely slow or fail from memory limits on this CPU-only machine.
-
-- Keep recordings clean and private.
-- Prepare the dataset locally with the previous tab.
-- Train on a compatible GPU machine if one is available to you, then import the exported model here.
-- Remote GPU services are not guaranteed to be free or continuously available; never upload private recordings unless you trust the service and understand its terms.
-- Windows 10 version 1903 is an old release. Before installing tools, make sure you understand the security and compatibility implications of running an outdated Windows build.
-""")
-            gr.Markdown("This is a hardware-based recommendation, not a benchmark result. We have not run RVC training on this PC.")
+        with gr.Tab("System Check"):
+            system_report=gr.Markdown(run_system_check())
+            gr.Button("Re-check").click(fn=run_system_check,inputs=[],outputs=[system_report])
         with gr.Tab("Train My Voice (Experimental)"):
             gr.Markdown("""## Train a voice model from your own recordings
 
