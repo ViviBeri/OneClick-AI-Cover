@@ -61,7 +61,7 @@ See [free-tier architecture](docs/FREE_TIER_ARCHITECTURE.md) for the privacy, li
 
 1. Download the repository as a ZIP and extract it to a folder you can write to.
 2. Connect to the internet and run `install.bat`.
-3. Wait for the installer to set up the managed Python runtimes, app dependencies, and pinned RVC backend. This can take a while and uses several GB of disk space.
+3. Wait for the installer to set up the managed Python runtimes, pinned CPU PyTorch/Demucs dependencies, pinned RVC backend, and required HuBERT/RMVPE inference assets. The installer verifies the downloaded asset sizes and checksums. This can take a while and uses several GB of disk space.
 4. Run `run.bat` to open the local Gradio interface.
 5. Add an inference-ready RVC voice model you are authorized to use under `models/voices/`.
 6. Select an input song and model, choose WAV or MP3, and click **Generate cover**.
