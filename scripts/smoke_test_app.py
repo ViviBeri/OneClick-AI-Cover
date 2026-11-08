@@ -21,8 +21,6 @@ def check_imports() -> None:
 
     import torch
     import torchaudio
-    from importlib.metadata import version
-
     if not torch.__version__.startswith("2.13.0"):
         raise RuntimeError(f"Expected PyTorch 2.13.0, found {torch.__version__}")
     if not torchaudio.__version__.startswith("2.11.1"):
