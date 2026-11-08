@@ -102,21 +102,16 @@ def main() -> int:
     args = parser.parse_args()
 
     if os.environ.get("RIGHTS_CONFIRMED", "").lower() != "true":
-        print("Refusing to run: confirm rights to use the sample and voice model.", file=sys.stderr)
-        return 2
+        parser.error("confirm rights to use the sample and voice model")
     if os.environ.get("MODEL_TRUST_CONFIRMED", "").lower() != "true":
-        print(
-            "Refusing to run: confirm that you trust the model publisher and .pth file. "
-            "RVC may execute pickle payloads while loading it.",
-            file=sys.stderr,
+        parser.error(
+            "confirm that you trust the model publisher and .pth file; "
+            "RVC may execute pickle payloads while loading it"
         )
-        return 2
     if not (args.sample_url and args.model_repo and args.model_file):
-        print("Sample URL, model repo, and model filename are all required.", file=sys.stderr)
-        return 2
+        parser.error("sample URL, model repo, and model filename are all required")
     if not 1 <= args.seconds <= 30:
-        print("Clip length must be between 1 and 30 seconds.", file=sys.stderr)
-        return 2
+        parser.error("clip length must be between 1 and 30 seconds")
 
     from oneclick_cover.audio_utils import _ffmpeg_path
     from oneclick_cover.model_preflight import inspect_rvc_checkpoint
