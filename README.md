@@ -97,7 +97,7 @@ The main interface is in `app.py`. Audio utilities live in `src/oneclick_cover/a
 |---|---|---|
 | Source checks and automated regression tests | CI checked | [Tests workflow](https://github.com/ViviBeri/OneClick-AI-Cover/actions/workflows/tests.yml) |
 | Windows dependency/import and startup checks | CI checked | [Windows Checks workflow](https://github.com/ViviBeri/OneClick-AI-Cover/actions/workflows/windows-checks.yml) |
-| Pinned HuBERT/RMVPE downloads and checksum verification | Windows CI check added; run pending | [Windows Checks workflow](https://github.com/ViviBeri/OneClick-AI-Cover/actions/workflows/windows-checks.yml) |
+| Pinned HuBERT/RMVPE downloads and checksum verification | **Passed on Windows CI (Python 3.10)** | All four assets passed size and SHA-256 verification in [Windows Checks run #42493399061](https://github.com/ViviBeri/OneClick-AI-Cover/actions/runs/42493399061); Python 3.11 skips the duplicate download. |
 | Static model preflight and quarantine regression tests | CI passed | [Tests workflow](https://github.com/ViviBeri/OneClick-AI-Cover/actions/workflows/tests.yml) |
 | Clean Windows 10/11 x64 installation | **Pending manual verification** | [Issue #1](https://github.com/ViviBeri/OneClick-AI-Cover/issues/1) |
 | Managed FFmpeg MP3 import/export on Windows | **Pending manual verification** | [Issue #2](https://github.com/ViviBeri/OneClick-AI-Cover/issues/2) |
