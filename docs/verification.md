@@ -170,3 +170,26 @@ Copy [`verification-results/TEMPLATE.md`](../verification-results/TEMPLATE.md) f
 ## Current status
 
 No physical clean-machine test result has been recorded in this repository yet. The full end-to-end workflow must remain marked pending until a tester records successful results. Do not change the README status banner to “verified” based only on CI.
+
+
+## Optional real-conversion CI run
+
+The manual **Manual clean Windows install** workflow can run one short conversion on a
+GitHub-hosted Windows runner (CPU only). This is opt-in. Enable `run_conversion`, confirm
+the rights checkbox, confirm that you trust the model publisher and exact `.pth` file,
+and provide an HTTPS sample URL, Hugging Face repo ID, and exact model filename.
+
+**Security warning:** RVC may deserialize `.pth` files with pickle. A malicious checkpoint
+can execute code on the runner. The trust confirmation is mandatory but is not a sandbox.
+Only use a model publisher and file you have independently reviewed and trust. The workflow
+uses a read-only repository permission and disables checkout credential persistence.
+
+The sample download is limited to 50 MiB and the clip to 1-30 seconds. The model download
+is pinned to the repository commit resolved at the start of the run and limited to 2 GiB.
+The workflow checks that the resulting WAV is readable, non-silent, finite, and close to the
+input duration. It uploads `e2e-report.json` and `cover.wav` for 14 days when available.
+Do not use private audio: repository collaborators with artifact access may be able to
+download the output.
+
+This is evidence for one clean runner, not proof of sound quality or behaviour on other
+hardware. Listen to `cover.wav` before recording a result against Issue #3.
