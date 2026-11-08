@@ -26,6 +26,7 @@ def read(relative_path: str) -> str:
 installer = read("install.bat")
 launcher = read("run.bat")
 project = read("pyproject.toml")
+workflow = read(".github/workflows/windows-checks.yml")
 
 # The main application and the pinned upstream RVC backend deliberately use
 # separate Python versions because their dependency constraints differ.
@@ -56,6 +57,13 @@ require('scripts\\download_rvc_assets.py' in installer,
         "installer downloads required HuBERT and RMVPE assets")
 require('torch==2.8.0' in project and 'torchaudio==2.8.0' in project,
         "main app pins matching PyTorch and torchaudio versions")
+require("torch.version.cuda is None" in installer,
+        "installer verifies the main app uses CPU-only PyTorch")
+require("Download and verify pinned RVC inference assets" in workflow,
+        "Windows CI downloads the pinned HuBERT and RMVPE assets")
+require("scripts/download_rvc_assets.py" in workflow,
+        "Windows CI exercises the RVC asset downloader")
+
 require((ROOT / "scripts" / "download_rvc_assets.py").is_file(),
         "RVC asset downloader exists")
 require('SETUP_STAGE=' in installer, "installer tracks the current setup stage for diagnostics")
