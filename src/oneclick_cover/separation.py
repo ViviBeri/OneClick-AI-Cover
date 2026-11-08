@@ -19,8 +19,9 @@ def separate_vocals(
     progress=None,
     *,
     device: str = "cpu",
-    segment: float = 5.0,
+    segment: int = 5,
     timeout: float = 1800,
+    shifts: int = 1,
 ) -> tuple[Path, Path]:
     """Separate vocals with streamed progress and a hard process timeout.
 
@@ -32,11 +33,17 @@ def separate_vocals(
         raise ValueError("Demucs device must be one of: cpu, auto, cuda.")
 
     try:
-        segment = float(segment)
+        segment_value = float(segment)
     except (TypeError, ValueError) as exc:
-        raise ValueError("Demucs segment size must be a number between 2.0 and 7.8 seconds.") from exc
-    if not math.isfinite(segment) or not 2.0 <= segment <= 7.8:
-        raise ValueError("Demucs segment size must be between 2.0 and 7.8 seconds.")
+        raise ValueError("Demucs segment size must be between 2 and 7 seconds and must be a whole number.") from exc
+    if not math.isfinite(segment_value) or not 2 <= segment_value <= 7:
+        raise ValueError("Demucs segment size must be between 2 and 7 seconds.")
+    if not segment_value.is_integer():
+        raise ValueError("Demucs segment size must be a whole number.")
+    segment = int(segment_value)
+
+    if isinstance(shifts, bool) or not isinstance(shifts, int) or shifts < 0:
+        raise ValueError("Demucs shifts must be a non-negative integer.")
 
     try:
         timeout = float(timeout)
@@ -59,6 +66,8 @@ def separate_vocals(
         "htdemucs",
         "--segment",
         str(segment),
+        "--shifts",
+        str(shifts),
         "--out",
         str(output_root),
     ]

@@ -128,7 +128,7 @@ Your files are processed locally by default. This app does not automatically upl
             fmt=gr.Radio(["WAV","MP3"],value="WAV",label="Export format")
             with gr.Accordion("Demucs performance settings", open=False):
                 demucs_device=gr.Dropdown(["cpu","auto","cuda"],value="cpu",label="Processing device",info="CPU is the safest default for low-memory PCs. CUDA requires a compatible NVIDIA GPU.")
-                demucs_segment=gr.Slider(2.0,7.8,value=5.0,step=0.5,label="Segment size (seconds)",info="Smaller segments reduce peak memory use but may run slower.")
+                demucs_segment=gr.Slider(2,7,value=5,step=1,label="Segment size (seconds)",info="Smaller segments reduce peak memory use but may run slower.")
                 demucs_timeout=gr.Slider(60,7200,value=1800,step=60,label="Separation timeout (seconds)",info="Stop a separation that exceeds this limit.")
             go=gr.Button("Generate cover",variant="primary")
             audio=gr.Audio(type="filepath",label="Finished cover")
