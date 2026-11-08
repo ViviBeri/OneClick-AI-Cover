@@ -14,10 +14,35 @@ URL = "http://127.0.0.1:7860/"
 
 
 def check_imports() -> None:
-    modules = ("gradio", "demucs", "numpy", "soundfile", "imageio_ffmpeg")
+    modules = ("gradio", "demucs", "numpy", "soundfile", "imageio_ffmpeg", "torch", "torchaudio")
     for name in modules:
         __import__(name)
         print(f"IMPORT OK: {name}", flush=True)
+
+    import torch
+    import torchaudio
+
+    if not torch.__version__.startswith("2.8.0"):
+        raise RuntimeError(f"Expected PyTorch 2.8.0, found {torch.__version__}")
+    if not torchaudio.__version__.startswith("2.8.0"):
+        raise RuntimeError(f"Expected torchaudio 2.8.0, found {torchaudio.__version__}")
+    if torch.version.cuda is not None:
+        raise RuntimeError(f"Expected CPU-only PyTorch, found CUDA build {torch.version.cuda}")
+    print(f"CPU PyTorch verified: torch {torch.__version__}, torchaudio {torchaudio.__version__}")
+
+
+def validate_page(status: int, body: str) -> None:
+    """Fail unless the rendered Gradio page advertises the expected app and tab."""
+    if status != 200:
+        raise RuntimeError(f"Unexpected HTTP status: {status}")
+    if "OneClick-AI-Cover" not in body:
+        raise RuntimeError(
+            "The Gradio page returned HTTP 200 but did not contain the expected app title."
+        )
+    if "System Check" not in body:
+        raise RuntimeError(
+            "The Gradio page loaded, but the System Check tab was not present."
+        )
 
 
 def wait_for_server(process: subprocess.Popen[str], timeout: float = 45.0) -> None:
@@ -35,14 +60,11 @@ def wait_for_server(process: subprocess.Popen[str], timeout: float = 45.0) -> No
             )
             with urllib.request.urlopen(request, timeout=2) as response:
                 body = response.read(1_000_000).decode("utf-8", errors="replace")
-                if response.status != 200:
-                    raise RuntimeError(f"Unexpected HTTP status: {response.status}")
-                if "OneClick-AI-Cover" not in body:
-                    raise RuntimeError(
-                        "The Gradio page returned HTTP 200 but did not contain "
-                        "the expected app title."
-                    )
-                print(f"HTTP SMOKE TEST OK: {URL} (status {response.status})")
+                validate_page(response.status, body)
+                print(
+                    f"HTTP SMOKE TEST OK: {URL} (status {response.status}); "
+                    "System Check tab is present."
+                )
                 return
         except (urllib.error.URLError, TimeoutError, OSError) as exc:
             last_error = str(exc)

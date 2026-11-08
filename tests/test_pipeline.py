@@ -32,7 +32,7 @@ def _prepare_fake_pipeline(monkeypatch, tmp_path):
     def fake_transcode(source_path, destination):
         write_audio(destination)
     
-    def fake_separate(input_wav, job_dir):
+    def fake_separate(input_wav, job_dir, **kwargs):
         return write_audio(job_dir / "vocals.wav"), write_audio(job_dir / "instrumental.wav")
 
     def fake_convert(input_vocal, output_vocal, model_path, pitch=0):
@@ -142,7 +142,7 @@ def test_generate_reports_demucs_failure_without_claiming_success(monkeypatch, t
 
     source, model = _prepare_fake_pipeline(monkeypatch, tmp_path)
 
-    def fail_separation(input_wav, job_dir):
+    def fail_separation(input_wav, job_dir, **kwargs):
         raise RuntimeError("Demucs separation failed: test failure")
 
     monkeypatch.setattr(app, "separate_vocals", fail_separation)

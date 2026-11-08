@@ -78,7 +78,7 @@ def prepare_training_dataset(uploaded_files, dataset_name, progress=gr.Progress(
         logging.exception("Dataset preparation failed")
         raise gr.Error(str(exc)) from exc
 
-def generate(song, model, pitch, vocal_gain, instrumental_gain, fmt, progress=gr.Progress()):
+def generate(song, model, pitch, vocal_gain, instrumental_gain, fmt, demucs_device="cpu", demucs_segment=5.0, demucs_timeout=1800, progress=gr.Progress()):
     if not song: raise gr.Error("Choose an input song first.")
     if not model: raise gr.Error("Add an authorized .pth model to models/voices, then refresh.")
     job = None
@@ -88,7 +88,10 @@ def generate(song, model, pitch, vocal_gain, instrumental_gain, fmt, progress=gr
         validate_voice_model(model_path)
         job=Path(tempfile.mkdtemp(prefix="cover_",dir=OUTPUT_DIR)); wav=job/"input.wav"
         progress(0.1,desc="Preparing audio"); transcode_to_wav(source,wav)
-        progress(0.25,desc="Separating vocals"); vocals,instrumental=separate_vocals(wav,job)
+        progress(0.25,desc="Separating vocals")
+        def update_separation_progress(fraction, message):
+            progress(0.25 + 0.35 * fraction, desc=message or "Separating vocals")
+        vocals,instrumental=separate_vocals(wav,job,progress=update_separation_progress,device=demucs_device,segment=float(demucs_segment),timeout=float(demucs_timeout))
         progress(0.6,desc="Converting voice"); converted=job/"converted.wav"; convert_voice(vocals,converted,model_path,int(pitch))
         progress(0.85,desc="Mixing"); output=job/"cover.wav"
         converted=match_sample_rate(converted,instrumental,job/"converted_matched.wav")
@@ -123,10 +126,14 @@ Your files are processed locally by default. This app does not automatically upl
             vocal_gain=gr.Slider(0.2,2,value=1,step=0.05,label="Vocal gain")
             instrumental_gain=gr.Slider(0.2,2,value=0.85,step=0.05,label="Instrumental gain")
             fmt=gr.Radio(["WAV","MP3"],value="WAV",label="Export format")
+            with gr.Accordion("Demucs performance settings", open=False):
+                demucs_device=gr.Dropdown(["cpu","auto","cuda"],value="cpu",label="Processing device",info="CPU is the safest default for low-memory PCs. CUDA requires a compatible NVIDIA GPU.")
+                demucs_segment=gr.Slider(2.0,7.8,value=5.0,step=0.5,label="Segment size (seconds)",info="Smaller segments reduce peak memory use but may run slower.")
+                demucs_timeout=gr.Slider(60,7200,value=1800,step=60,label="Separation timeout (seconds)",info="Stop a separation that exceeds this limit.")
             go=gr.Button("Generate cover",variant="primary")
             audio=gr.Audio(type="filepath",label="Finished cover")
             status=gr.Textbox(label="Status")
-            go.click(generate,inputs=[song,model,pitch,vocal_gain,instrumental_gain,fmt],outputs=[audio,status])
+            go.click(generate,inputs=[song,model,pitch,vocal_gain,instrumental_gain,fmt,demucs_device,demucs_segment,demucs_timeout],outputs=[audio,status])
         with gr.Tab("Prepare Voice Recordings"):
             gr.Markdown("""## Prepare your own voice recordings
 Upload recordings of your own voice, or recordings you have explicit permission to use. The app converts each file to mono WAV and stores it in a local dataset folder. Recordings are not uploaded to a cloud service by this step.
