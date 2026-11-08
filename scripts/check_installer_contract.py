@@ -56,7 +56,7 @@ require('scripts\\download_rvc_assets.py' in installer,
         "installer downloads required HuBERT and RMVPE assets")
 require('torch==2.8.0' in project and 'torchaudio==2.8.0' in project,
         "main app pins matching PyTorch and torchaudio versions")
-require('download_rvc_assets.py' in read("scripts/download_rvc_assets.py"),
+require((ROOT / "scripts" / "download_rvc_assets.py").is_file(),
         "RVC asset downloader exists")
 require('SETUP_STAGE=' in installer, "installer tracks the current setup stage for diagnostics")
 require('SETUP FAILED during:' in installer, "installer reports which setup stage failed")
