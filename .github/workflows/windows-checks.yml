@@ -24,9 +24,9 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
       - name: Install pinned CPU PyTorch
-        run: python -m pip install --index-url https://download.pytorch.org/whl/cpu torch==2.13.0 torchaudio==2.11.1 torchcodec==0.16.0
+        run: python -m pip install --index-url https://download.pytorch.org/whl/cpu torch==2.13.0 torchaudio==2.11.1
       - name: Verify pinned CPU PyTorch
-        run: python -c "import torch, torchaudio; assert torch.__version__.startswith('2.13.0'), torch.__version__; assert torchaudio.__version__.startswith('2.11.1'), torchaudio.__version__; assert torch.version.cuda is None, torch.version.cuda; import torchcodec; from importlib.metadata import version; print('CPU torch', torch.__version__, 'torchaudio', torchaudio.__version__, 'torchcodec', version('torchcodec'))"
+        run: python -c "import torch, torchaudio; assert torch.__version__.startswith('2.13.0'), torch.__version__; assert torchaudio.__version__.startswith('2.11.1'), torchaudio.__version__; assert torch.version.cuda is None, torch.version.cuda; print('CPU torch', torch.__version__, 'torchaudio', torchaudio.__version__)"
       - name: Install project and test dependencies
         run: |
           python -m pip install --upgrade pip
