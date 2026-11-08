@@ -30,7 +30,7 @@ workflow = read(".github/workflows/windows-checks.yml")
 
 # The main application and the pinned upstream RVC backend deliberately use
 # separate Python versions because their dependency constraints differ.
-require('python install 3.10' in installer, "installer provisions Python 3.10 for the app")
+require('python install 3.11' in installer, "installer provisions Python 3.11 for the app")
 require('python install 3.12' in installer, "installer provisions Python 3.12 for RVC")
 require('RVC_COMMIT=81eed5e8f68b6bed1789f682fe78cdd324495afc' in installer,
         "installer pins the reviewed RVC backend revision")
@@ -69,8 +69,8 @@ require((ROOT / "scripts" / "download_rvc_assets.py").is_file(),
 require('SETUP_STAGE=' in installer, "installer tracks the current setup stage for diagnostics")
 require('SETUP FAILED during:' in installer, "installer reports which setup stage failed")
 require('docs/troubleshooting.md' in installer, "installer links to troubleshooting guidance on failure")
-require(re.search(r'requires-python\s*=\s*">=3\.10,<3\.12"', project) is not None,
-        "project Python range matches the main app environment")
+require(re.search(r'requires-python\s*=\s*">=3\.11,<3\.13"', project) is not None,
+        "project Python range matches the supported Python 3.11–3.12 app environment")
 require('.venv\\Scripts\\python.exe' in launcher and 'app.py' in launcher,
         "launcher checks the managed app interpreter and starts app.py")
 require('exit /b 1' in launcher.lower(),

@@ -10,13 +10,13 @@ The repository has automated unit tests and a Windows GitHub Actions workflow. T
 
 ## CI smoke test
 
-The workflow tests Python 3.10 and 3.11 on Windows and runs:
+The workflow tests Python 3.11 and 3.12 on Windows and runs:
 
 1. Install the project and test dependencies.
 2. Compile the application and source/test scripts.
 3. Run the unit tests.
-4. On the Python 3.10 Windows job, download all four required HuBERT/RMVPE assets from the pinned public Hugging Face revision and verify their expected sizes and SHA-256 hashes. The downloader uses the fixed verified `main` commit `e6d0c1a17da07c33557852f9dfa2bd44cc75737d`, not a community PR ref. The HuBERT and RMVPE large-weight hashes match the SHA-256 values on their upstream file pages at that revision; the two small JSON hashes were calculated locally from the first download at that pinned revision and then fixed in the downloader manifest.
-5. Import Gradio, Demucs, NumPy, SoundFile, imageio-ffmpeg, PyTorch, and torchaudio; start `app.py` as a subprocess, request `http://127.0.0.1:7860/`, and pass the response through the same `validate_page()` helper exercised by `tests/test_smoke_test_app.py`. The validator requires HTTP 200, the app title, and the System Check tab; a rejected page raises and fails the CI step. The asset-download step is intentionally limited to Python 3.10.
+4. On the Python 3.11 Windows job, download all four required HuBERT/RMVPE assets from the pinned public Hugging Face revision and verify their expected sizes and SHA-256 hashes. The downloader uses the fixed verified `main` commit `e6d0c1a17da07c33557852f9dfa2bd44cc75737d`, not a community PR ref. The HuBERT and RMVPE large-weight hashes match the SHA-256 values on their upstream file pages at that revision; the two small JSON hashes were calculated locally from the first download at that pinned revision and then fixed in the downloader manifest.
+5. Import Gradio, Demucs, NumPy, SoundFile, imageio-ffmpeg, PyTorch, and torchaudio; start `app.py` as a subprocess, request `http://127.0.0.1:7860/`, and pass the response through the same `validate_page()` helper exercised by `tests/test_smoke_test_app.py`. The validator requires HTTP 200, the app title, and the System Check tab; a rejected page raises and fails the CI step. The asset-download step is intentionally limited to Python 3.11.
 6. Run `python scripts/check_installer_contract.py` to check that the installer and launcher still agree on the managed Python versions, pinned RVC revision, required RVC entry points, CPU PyTorch pin, inference asset download step, and explicit failure paths. This is a static check and does not run the installer.
 7. Check that the Windows setup files and this guide exist.
 

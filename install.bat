@@ -28,15 +28,15 @@ if not exist "%UV_EXE%" (
   powershell -NoProfile -ExecutionPolicy Bypass -Command "$ErrorActionPreference='Stop'; $ProgressPreference='SilentlyContinue'; [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; Invoke-WebRequest -Uri 'https://github.com/astral-sh/uv/releases/download/%UV_VERSION%/uv-x86_64-pc-windows-msvc.zip' -OutFile '%CD%\.runtime\uv.zip'; $actual=(Get-FileHash '%CD%\.runtime\uv.zip' -Algorithm SHA256).Hash.ToLower(); if ($actual -ne '%UV_SHA256%') { throw 'uv archive SHA-256 mismatch' }; Expand-Archive -Force '%CD%\.runtime\uv.zip' '%CD%\.runtime\uv-unpack'; Copy-Item '%CD%\.runtime\uv-unpack\uv.exe' '%UV_EXE%' -Force"
   if errorlevel 1 goto failed
 )
-set "SETUP_STAGE=Installing managed Python 3.10 and 3.12"
-echo [2/7] Installing managed Python 3.10 for the main app and Python 3.12 for RVC...
-"%UV_EXE%" python install 3.10
+set "SETUP_STAGE=Installing managed Python 3.11 and 3.12"
+echo [2/7] Installing managed Python 3.11 for the main app and Python 3.12 for RVC...
+"%UV_EXE%" python install 3.11
 if errorlevel 1 goto failed
 "%UV_EXE%" python install 3.12
 if errorlevel 1 goto failed
 set "SETUP_STAGE=Creating the main app environment and installing dependencies"
 echo [3/7] Creating the app environment...
-if not exist ".venv\Scripts\python.exe" "%UV_EXE%" venv --python 3.10 .venv
+if not exist ".venv\Scripts\python.exe" "%UV_EXE%" venv --python 3.11 .venv
 if errorlevel 1 goto failed
 set "SETUP_STAGE=Installing pinned CPU PyTorch for Demucs"
 echo Installing CPU PyTorch 2.8.0 and torchaudio 2.8.0 from the official PyTorch wheel index...
