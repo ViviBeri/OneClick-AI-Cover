@@ -73,6 +73,10 @@ def main() -> int:
             else:
                 raise TimeoutError(f"Gradio app did not start: {last_error}")
 
+            expect(page.locator(".studio-hero")).to_be_visible()
+            expect(page.locator(".studio-step")).to_have_count(4)
+            expect(page.get_by_text("LOCAL PROCESSING")).to_be_visible()
+
             click_gradio_tab(page, "Import Voice Model")
             # Gradio 6 does not consistently associate the visible component label
             # with its hidden file input. Both model-preflight and import tabs accept
@@ -130,6 +134,13 @@ def main() -> int:
                 raise RuntimeError(
                     f"Mobile layout overflows viewport: {container_width}px > {viewport_width}px"
                 )
+            document_width = page.evaluate("document.documentElement.scrollWidth")
+            if document_width > viewport_width:
+                raise RuntimeError(
+                    f"Mobile page overflows viewport: {document_width}px > {viewport_width}px"
+                )
+            expect(page.locator(".studio-hero")).to_be_visible()
+            expect(page.locator(".studio-step")).to_have_count(4)
 
             print(
                 "GRADIO 6 BROWSER SMOKE PASSED: import callback, model refresh, and 390px mobile viewport passed; "
