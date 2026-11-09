@@ -13,6 +13,28 @@ ROOT = Path(__file__).resolve().parents[1]
 URL = "http://127.0.0.1:7860/"
 
 
+def click_gradio_tab(page, name: str) -> None:
+    """Click a Gradio tab while tolerating transient DOM replacement."""
+    last_error = None
+    for _ in range(5):
+        tab = page.get_by_role("tab", name=name)
+        try:
+            expect(tab).to_be_visible(timeout=5000)
+            # Gradio can replace tab nodes during a render between Playwright's
+            # actionability checks. Reacquire and dispatch the native click.
+            tab.evaluate("(element) => element.click()")
+            return
+        except Exception as exc:
+            last_error = exc
+            page.wait_for_timeout(250)
+    diagnostics = page.locator('[role="tablist"]').evaluate(
+        "(element) => ({html: element.outerHTML, buttons: [...document.querySelectorAll('button')].map((button) => ({text: button.innerText, label: button.getAttribute('aria-label'), title: button.title, html: button.outerHTML.slice(0, 500)}))})"
+    )
+    raise RuntimeError(
+        f"Could not activate Gradio tab {name!r}: {last_error}; DOM: {diagnostics}"
+    )
+
+
 def main() -> int:
     env = os.environ.copy()
     env["GRADIO_ANALYTICS_ENABLED"] = "False"
@@ -51,7 +73,7 @@ def main() -> int:
             else:
                 raise TimeoutError(f"Gradio app did not start: {last_error}")
 
-            page.get_by_role("tab", name="Import Voice Model").click()
+            click_gradio_tab(page, "Import Voice Model")
             # Gradio 6 does not consistently associate the visible component label
             # with its hidden file input. Both model-preflight and import tabs accept
             # .pth files, so the final matching input is the import control.
@@ -91,13 +113,26 @@ def main() -> int:
                     timeout=15000,
                 )
 
-            page.get_by_role("tab", name="Generate Cover").click()
+            click_gradio_tab(page, "Generate Cover")
             page.get_by_role("button", name="Refresh models").click()
             expect(page.get_by_label("RVC voice model (.pth)")).to_have_value(
                 "browser-smoke-model.pth", timeout=15000
             )
+            # Verify the primary workflow remains usable at a narrow Android viewport.
+            page.set_viewport_size({"width": 390, "height": 844})
+            click_gradio_tab(page, "Generate Cover")
+            expect(page.get_by_role("button", name="Generate cover")).to_be_visible()
+            container_width = page.locator(".gradio-container").evaluate(
+                "(element) => Math.ceil(element.getBoundingClientRect().width)"
+            )
+            viewport_width = page.evaluate("window.innerWidth")
+            if container_width > viewport_width:
+                raise RuntimeError(
+                    f"Mobile layout overflows viewport: {container_width}px > {viewport_width}px"
+                )
+
             print(
-                "GRADIO 6 BROWSER SMOKE PASSED: import callback copied the test model; "
+                "GRADIO 6 BROWSER SMOKE PASSED: import callback, model refresh, and 390px mobile viewport passed; "
                 "refresh callback exposed it in the voice-model selector.",
                 flush=True,
             )
