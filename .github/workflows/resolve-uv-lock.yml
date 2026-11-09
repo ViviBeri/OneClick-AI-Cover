@@ -1,0 +1,84 @@
+name: Resolve and validate uv lockfile
+
+on:
+  push:
+    branches:
+      - chore/resolve-uv-lockfile
+    paths:
+      - pyproject.toml
+      - .github/workflows/resolve-uv-lock.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  resolve:
+    name: Resolve dependencies and audit lockfile
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out current branch
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: chore/resolve-uv-lockfile
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@d0cc045d04ccac9d8b7881df0226f9e82c39688e
+        with:
+          version: "0.13.7"
+          enable-cache: true
+
+      - name: Install supported Python interpreters
+        run: |
+          uv python install 3.11
+          uv python install 3.12
+
+      - name: Resolve lockfile for declared Python range
+        run: uv lock
+
+      - name: Verify lockfile is reproducible
+        run: uv lock --check
+
+      - name: Validate Python compatibility
+        run: |
+          uv python find 3.11
+          uv python find 3.12
+          uv lock --check
+
+      - name: Install OSV-Scanner
+        run: |
+          curl --fail --location --retry 5 --retry-all-errors --retry-delay 2 --retry-max-time 120 --output osv-scanner_linux_amd64 https://github.com/google/osv-scanner/releases/download/v2.7.0/osv-scanner_linux_amd64
+          curl --fail --location --retry 5 --retry-all-errors --retry-delay 2 --retry-max-time 120 --output osv-scanner_SHA256SUMS https://github.com/google/osv-scanner/releases/download/v2.7.0/osv-scanner_SHA256SUMS
+          grep ' osv-scanner_linux_amd64$' osv-scanner_SHA256SUMS | sha256sum --check -
+          chmod +x osv-scanner_linux_amd64
+
+      - name: Scan the resolved lockfile
+        run: |
+          set +e
+          ./osv-scanner_linux_amd64 scan source --lockfile=./uv.lock --format=table 2>&1 | tee osv-scan.txt
+          scanner_status=${PIPESTATUS[0]}
+          set -e
+          echo "OSV-Scanner exit code: ${scanner_status}"
+          # Preserve the complete advisory report for review without hiding findings.
+
+      - name: Commit generated lockfile
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add uv.lock
+          if git diff --cached --quiet; then
+            echo "uv.lock is already up to date"
+          else
+            git commit -m "chore: regenerate uv lockfile from current main"
+            git push origin HEAD:chore/resolve-uv-lockfile
+          fi
+
+      - name: Upload lockfile and OSV report
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: oneclick-ai-cover-uv-lock-audit
+          path: |
+            uv.lock
+            osv-scan.txt
+          if-no-files-found: error
+          retention-days: 14
