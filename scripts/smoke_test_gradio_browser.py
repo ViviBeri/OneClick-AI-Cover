@@ -96,8 +96,21 @@ def main() -> int:
             expect(page.get_by_label("RVC voice model (.pth)")).to_have_value(
                 "browser-smoke-model.pth", timeout=15000
             )
+            # Verify the primary workflow remains usable at a narrow Android viewport.
+            page.set_viewport_size({"width": 390, "height": 844})
+            page.get_by_role("tab", name="Generate Cover").click()
+            expect(page.get_by_role("button", name="Generate cover")).to_be_visible()
+            container_width = page.locator(".gradio-container").evaluate(
+                "(element) => Math.ceil(element.getBoundingClientRect().width)"
+            )
+            viewport_width = page.evaluate("window.innerWidth")
+            if container_width > viewport_width:
+                raise RuntimeError(
+                    f"Mobile layout overflows viewport: {container_width}px > {viewport_width}px"
+                )
+
             print(
-                "GRADIO 6 BROWSER SMOKE PASSED: import callback copied the test model; "
+                "GRADIO 6 BROWSER SMOKE PASSED: import callback, model refresh, and 390px mobile viewport passed; "
                 "refresh callback exposed it in the voice-model selector.",
                 flush=True,
             )
