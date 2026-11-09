@@ -47,8 +47,8 @@ jobs:
 
       - name: Install OSV-Scanner
         run: |
-          curl -fsSLO https://github.com/google/osv-scanner/releases/download/v2.7.0/osv-scanner_linux_amd64
-          curl -fsSLO https://github.com/google/osv-scanner/releases/download/v2.7.0/osv-scanner_SHA256SUMS
+          curl --fail --location --retry 5 --retry-all-errors --retry-delay 2 --retry-max-time 120 --output osv-scanner_linux_amd64 https://github.com/google/osv-scanner/releases/download/v2.7.0/osv-scanner_linux_amd64
+          curl --fail --location --retry 5 --retry-all-errors --retry-delay 2 --retry-max-time 120 --output osv-scanner_SHA256SUMS https://github.com/google/osv-scanner/releases/download/v2.7.0/osv-scanner_SHA256SUMS
           grep ' osv-scanner_linux_amd64$' osv-scanner_SHA256SUMS | sha256sum --check -
           chmod +x osv-scanner_linux_amd64
 
