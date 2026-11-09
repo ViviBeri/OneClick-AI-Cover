@@ -66,9 +66,15 @@ def main() -> int:
                 candidate = Path(temporary) / "browser-smoke-model.pth"
                 candidate.write_bytes(b"browser callback smoke test" + bytes(2048))
                 upload.set_input_files(str(candidate), timeout=10000)
-                page.get_by_label(
+                import_trust = page.get_by_label(
                     "I trust this .pth checkpoint and its publisher, and understand that importing it does not sandbox the file."
-                ).check()
+                )
+                import_trust.check()
+                replacement = Path(temporary) / "replacement-model.pth"
+                replacement.write_bytes(b"replacement browser smoke test" + bytes(2048))
+                upload.set_input_files(str(replacement), timeout=10000)
+                expect(import_trust).not_to_be_checked(timeout=10000)
+                import_trust.check()
                 page.get_by_role("button", name="Import model").click()
                 expect(page.get_by_label("Import status")).to_have_value(
                     "Imported browser-smoke-model.pth. You can now select it under Generate Cover.",
