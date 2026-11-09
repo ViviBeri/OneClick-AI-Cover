@@ -47,7 +47,7 @@ jobs:
           Get-ComputerInfo | Select-Object WindowsProductName, WindowsVersion, OsBuildNumber, OsArchitecture
           Get-PSDrive -Name C | Select-Object Name, Used, Free
 
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           persist-credentials: false
 
