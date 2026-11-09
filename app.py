@@ -109,85 +109,200 @@ def generate(song, model, pitch, vocal_gain, instrumental_gain, fmt, demucs_devi
             shutil.rmtree(job, ignore_errors=True)
         logging.exception("Cover generation failed"); raise gr.Error(str(e)) from e
 APP_CSS = """
-/* Keep the local Gradio interface comfortable on phones and tablets. */
+:root {
+    color-scheme: dark;
+    --studio-bg: #080d18;
+    --studio-panel: #111a2b;
+    --studio-panel-raised: #172338;
+    --studio-border: rgba(148, 163, 184, 0.16);
+    --studio-text: #edf2ff;
+    --studio-muted: #9aa9c2;
+    --studio-accent: #8b7cff;
+    --studio-accent-strong: #a99cff;
+}
 .gradio-container {
-    width: min(100%, 1120px) !important;
+    width: min(100%, 1180px) !important;
     margin-inline: auto !important;
-    padding-inline: clamp(0.75rem, 3vw, 1.5rem) !important;
+    padding: 1.25rem clamp(0.75rem, 3vw, 2rem) 3rem !important;
+    background:
+        radial-gradient(ellipse at 12% 0%, rgba(93, 76, 190, 0.17), transparent 34rem),
+        radial-gradient(ellipse at 92% 8%, rgba(34, 160, 181, 0.10), transparent 28rem),
+        var(--studio-bg) !important;
+    color: var(--studio-text) !important;
 }
-.gradio-container button,
-.gradio-container input,
-.gradio-container select,
-.gradio-container textarea {
+#oneclick-studio .studio-hero {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1.5rem;
+    padding: clamp(1.35rem, 4vw, 2.4rem);
+    margin: 0 0 1.1rem;
+    border: 1px solid var(--studio-border);
+    border-radius: 24px;
+    background: linear-gradient(135deg, rgba(25, 36, 59, .98), rgba(15, 24, 41, .96));
+    box-shadow: 0 22px 70px rgba(0, 0, 0, .22);
+}
+#oneclick-studio .studio-kicker {
+    margin: 0 0 .7rem;
+    color: #aaa0ff;
+    font-size: .72rem;
+    font-weight: 750;
+    letter-spacing: .16em;
+    text-transform: uppercase;
+}
+#oneclick-studio .studio-hero h1 {
+    margin: 0;
+    color: #f7f8ff;
+    font-size: clamp(2rem, 5vw, 3.3rem);
+    font-weight: 760;
+    letter-spacing: -.055em;
+    line-height: 1.02;
+}
+#oneclick-studio .studio-hero p {
+    max-width: 42rem;
+    margin: .8rem 0 0;
+    color: #aebbd1;
+    font-size: 1rem;
+    line-height: 1.65;
+}
+#oneclick-studio .studio-local-pill {
+    flex: 0 0 auto;
+    padding: .65rem .9rem;
+    border: 1px solid rgba(74, 222, 128, .25);
+    border-radius: 999px;
+    background: rgba(22, 101, 52, .18);
+    color: #86efac;
+    font-size: .72rem;
+    font-weight: 750;
+    letter-spacing: .08em;
+    white-space: nowrap;
+}
+#oneclick-studio .studio-steps {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: .75rem;
+    margin: 0 0 1.25rem;
+}
+#oneclick-studio .studio-step {
+    min-width: 0;
+    padding: .9rem 1rem;
+    border: 1px solid var(--studio-border);
+    border-radius: 15px;
+    background: rgba(17, 26, 43, .82);
+}
+#oneclick-studio .studio-step b {
+    display: block;
+    margin-bottom: .25rem;
+    color: #f0edff;
+    font-size: .88rem;
+}
+#oneclick-studio .studio-step span {
+    color: var(--studio-muted);
+    font-size: .76rem;
+}
+#oneclick-studio .tabs,
+#oneclick-studio .tabitem,
+#oneclick-studio .block,
+#oneclick-studio .form {
+    border-color: var(--studio-border) !important;
+}
+#oneclick-studio .tab-nav {
+    gap: .35rem;
+    padding: .45rem;
+    border: 1px solid var(--studio-border);
+    border-radius: 16px;
+    background: rgba(17, 26, 43, .88);
+}
+#oneclick-studio .tab-nav button {
+    min-height: 2.8rem;
+    border-radius: 11px !important;
+    color: #aab8ce !important;
+    font-weight: 650;
+}
+#oneclick-studio .tab-nav button.selected {
+    background: linear-gradient(135deg, #7668e8, #6555cf) !important;
+    color: white !important;
+    box-shadow: 0 5px 18px rgba(118, 104, 232, .22);
+}
+#oneclick-studio button.primary {
+    min-height: 3.1rem;
+    border: 1px solid rgba(190, 180, 255, .3) !important;
+    border-radius: 12px !important;
+    background: linear-gradient(135deg, #8878ff, #6859db) !important;
+    color: #fff !important;
+    font-weight: 750 !important;
+    box-shadow: 0 8px 22px rgba(104, 89, 219, .2);
+}
+#oneclick-studio input,
+#oneclick-studio textarea,
+#oneclick-studio select {
     min-height: 2.75rem;
+    border-color: var(--studio-border) !important;
+    border-radius: 10px !important;
 }
-.gradio-container button {
-    touch-action: manipulation;
-}
-.gradio-container audio {
-    width: 100%;
+#oneclick-studio audio { width: 100%; }
+#oneclick-studio h2,
+#oneclick-studio h3 { color: #eef2ff; letter-spacing: -.02em; }
+#oneclick-studio label,
+#oneclick-studio .wrap { color: #d8e1f1; }
+#oneclick-studio .studio-guide {
+    margin: 0 0 1rem;
+    padding: 1rem 1.15rem;
+    border: 1px solid var(--studio-border);
+    border-radius: 15px;
+    background: rgba(17, 26, 43, .68);
+    color: #aebbd1;
+    line-height: 1.65;
 }
 @media (max-width: 700px) {
-    .gradio-container {
-        padding: 0.75rem !important;
-    }
-    .gradio-container .row,
-    .gradio-container .gradio-row {
-        flex-direction: column !important;
-        align-items: stretch !important;
-        gap: 0.75rem !important;
-    }
-    .gradio-container .column,
-    .gradio-container .gradio-column {
-        min-width: 0 !important;
-        width: 100% !important;
-    }
-    .gradio-container button {
-        width: 100%;
-    }
-    .gradio-container input,
-    .gradio-container textarea,
-    .gradio-container select {
-        font-size: 16px !important;
-    }
-    .gradio-container .tab-nav {
+    .gradio-container { padding: .75rem .65rem 2rem !important; }
+    #oneclick-studio .studio-hero { align-items: flex-start; flex-direction: column; border-radius: 18px; }
+    #oneclick-studio .studio-local-pill { align-self: flex-start; }
+    #oneclick-studio .studio-steps { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .55rem; }
+    #oneclick-studio .studio-step { padding: .75rem; }
+    #oneclick-studio .row,
+    #oneclick-studio .gradio-row { flex-direction: column !important; align-items: stretch !important; gap: .75rem !important; }
+    #oneclick-studio .column,
+    #oneclick-studio .gradio-column { min-width: 0 !important; width: 100% !important; }
+    #oneclick-studio button { min-height: 2.8rem; }
+    #oneclick-studio input,
+    #oneclick-studio textarea,
+    #oneclick-studio select { font-size: 16px !important; }
+    #oneclick-studio .tab-nav {
         overflow-x: auto !important;
         flex-wrap: nowrap !important;
         scrollbar-width: thin;
         -webkit-overflow-scrolling: touch;
     }
-    .gradio-container .tab-nav button {
-        width: auto;
-        min-width: max-content;
-        white-space: nowrap;
-    }
-    .gradio-container h1 {
-        font-size: 1.65rem !important;
-        line-height: 1.2 !important;
-    }
+    #oneclick-studio .tab-nav button { width: auto; min-width: max-content; white-space: nowrap; }
 }
 @media (prefers-reduced-motion: reduce) {
-    .gradio-container *,
-    .gradio-container *::before,
-    .gradio-container *::after {
+    #oneclick-studio *, #oneclick-studio *::before, #oneclick-studio *::after {
         scroll-behavior: auto !important;
-        animation-duration: 0.01ms !important;
-        transition-duration: 0.01ms !important;
+        animation-duration: .01ms !important;
+        transition-duration: .01ms !important;
     }
 }
 """
 
-with gr.Blocks(title="OneClick-AI-Cover") as demo:
-    gr.Markdown("""# OneClick-AI-Cover
-**Free • Local-first • No paid API required**
-
-### Quick start
-1. Add an authorized RVC `.pth` model under `models/voices/`, then click **Refresh models**.
-2. Choose your song and voice model.
-3. Click **Generate cover** and wait for separation, conversion, and mixing to finish.
-4. Save the result shown below. If a step fails, copy only sanitized error details when asking for help.
-
-Your files are processed locally by default. This app does not automatically upload recordings to a cloud service. Remote training is a separate, not-yet-automated workflow. Use only voices and audio you have permission to use. Read [legal and ethical use](https://github.com/ViviBeri/OneClick-AI-Cover/blob/main/docs/ETHICS_AND_LEGAL.md) and [community guide](https://github.com/ViviBeri/OneClick-AI-Cover/blob/main/docs/COMMUNITY.md).""")
+with gr.Blocks(title="OneClick AI Cover — Studio", elem_id="oneclick-studio", theme=gr.themes.Soft(primary_hue="violet", secondary_hue="cyan", neutral_hue="slate")) as demo:
+    gr.HTML("""
+    <section class="studio-hero">
+      <div>
+        <div class="studio-kicker">OneClick Audio Lab</div>
+        <h1>Make your voice<br>the main event.</h1>
+        <p>Create AI singing covers with local vocal separation, voice conversion and studio-style mixing. Your audio stays on your computer by default.</p>
+      </div>
+      <div class="studio-local-pill">LOCAL PROCESSING</div>
+    </section>
+    <section class="studio-steps" aria-label="Cover creation workflow">
+      <div class="studio-step"><b>01 · Upload</b><span>Choose your song</span></div>
+      <div class="studio-step"><b>02 · Select</b><span>Pick a trusted voice</span></div>
+      <div class="studio-step"><b>03 · Create</b><span>Separate, convert, mix</span></div>
+      <div class="studio-step"><b>04 · Export</b><span>Save WAV or MP3</span></div>
+    </section>
+    """)
+    gr.Markdown("""<div class="studio-guide">**Quick start:** Import an authorized RVC <code>.pth</code> model in <strong>Import Voice Model</strong>, return to <strong>Generate Cover</strong>, choose your song and voice, then create your cover. Use only voices and audio you have permission to use. Review the <a href="https://github.com/ViviBeri/OneClick-AI-Cover/blob/main/docs/ETHICS_AND_LEGAL.md">legal and ethical use guide</a> and <a href="https://github.com/ViviBeri/OneClick-AI-Cover/blob/main/docs/COMMUNITY.md">community guide</a>.</div>""")
     with gr.Tabs():
         with gr.Tab("Generate Cover"):
             with gr.Row():
