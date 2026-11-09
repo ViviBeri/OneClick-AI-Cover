@@ -183,6 +183,7 @@ def main() -> int:
             1.0,
             0.85,
             "WAV",
+            trust_confirmed=True,
             progress=lambda *args, **kwargs: None,
         )
         report["stages"]["generate_seconds"] = round(time.monotonic() - stage_started, 1)
