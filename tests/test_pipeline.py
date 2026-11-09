@@ -48,7 +48,7 @@ def test_generate_runs_pipeline_and_produces_readable_wav(monkeypatch, tmp_path)
     source, model = _prepare_fake_pipeline(monkeypatch, tmp_path)
 
     output, status = app.generate(
-        str(source), model.name, 0, 1.0, 0.85, "WAV"
+        str(source), model.name, 0, 1.0, 0.85, "WAV", trust_confirmed=True
     )
 
     output_path = Path(output)
@@ -68,7 +68,7 @@ def test_generate_exports_mp3_when_requested(monkeypatch, tmp_path):
     source, model = _prepare_fake_pipeline(monkeypatch, tmp_path)
 
     output, status = app.generate(
-        str(source), model.name, 0, 1.0, 0.85, "MP3"
+        str(source), model.name, 0, 1.0, 0.85, "MP3", trust_confirmed=True
     )
 
     output_path = Path(output)
@@ -97,7 +97,7 @@ def test_generate_resamples_48k_rvc_output_before_mixing(monkeypatch, tmp_path):
     monkeypatch.setattr(app, "convert_voice", fake_convert_48k)
 
     output, status = app.generate(
-        str(source), model.name, 0, 1.0, 0.85, "WAV"
+        str(source), model.name, 0, 1.0, 0.85, "WAV", trust_confirmed=True
     )
 
     audio, sample_rate = sf.read(output, dtype="float32", always_2d=True)
@@ -116,7 +116,7 @@ def test_generate_reports_rvc_failure_without_claiming_success(monkeypatch, tmp_
     monkeypatch.setattr(app, "convert_voice", fail_conversion)
 
     with pytest.raises(gr.Error, match="RVC inference failed: test failure"):
-        app.generate(str(source), model.name, 0, 1.0, 0.85, "WAV")
+        app.generate(str(source), model.name, 0, 1.0, 0.85, "WAV", trust_confirmed=True)
 
     # A failed conversion must not leave a plausible finished cover behind.
     assert not list(Path(app.OUTPUT_DIR).glob("cover_*"))
@@ -133,7 +133,7 @@ def test_generate_reports_mp3_export_failure(monkeypatch, tmp_path):
     monkeypatch.setattr(audio_utils, "export_mp3", fail_export)
 
     with pytest.raises(gr.Error, match="MP3 export failed: test failure"):
-        app.generate(str(source), model.name, 0, 1.0, 0.85, "MP3")
+        app.generate(str(source), model.name, 0, 1.0, 0.85, "MP3", trust_confirmed=True)
 
     assert not list(Path(app.OUTPUT_DIR).glob("cover_*"))
 
@@ -148,6 +148,26 @@ def test_generate_reports_demucs_failure_without_claiming_success(monkeypatch, t
     monkeypatch.setattr(app, "separate_vocals", fail_separation)
 
     with pytest.raises(gr.Error, match="Demucs separation failed: test failure"):
-        app.generate(str(source), model.name, 0, 1.0, 0.85, "WAV")
+        app.generate(str(source), model.name, 0, 1.0, 0.85, "WAV", trust_confirmed=True)
 
     assert not list(Path(app.OUTPUT_DIR).glob("cover_*/cover.wav"))
+
+
+
+def test_generate_requires_explicit_model_trust_before_running_pipeline(monkeypatch, tmp_path):
+    import gradio as gr
+
+    source, model = _prepare_fake_pipeline(monkeypatch, tmp_path)
+
+    def unexpected_conversion(*args, **kwargs):
+        raise AssertionError("Conversion must not run before trust acknowledgement")
+
+    monkeypatch.setattr(app, "convert_voice", unexpected_conversion)
+
+    with pytest.raises(gr.Error, match="Trust acknowledgement required"):
+        app.generate(
+            str(source), model.name, 0, 1.0, 0.85, "WAV",
+            trust_confirmed=False,
+        )
+
+    assert not list(Path(app.OUTPUT_DIR).glob("cover_*"))
