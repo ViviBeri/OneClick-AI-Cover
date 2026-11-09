@@ -14,16 +14,25 @@ URL = "http://127.0.0.1:7860/"
 
 
 def click_gradio_tab(page, name: str) -> None:
-    """Click a Gradio tab while tolerating transient DOM replacement."""
+    """Click a Gradio tab, including tabs hidden in the overflow menu."""
     last_error = None
     for _ in range(5):
         tab = page.get_by_role("tab", name=name)
         try:
-            expect(tab).to_be_visible(timeout=5000)
-            # Gradio can replace tab nodes during a render between Playwright's
-            # actionability checks. Reacquire and dispatch the native click.
-            tab.evaluate("(element) => element.click()")
-            return
+            if tab.count() and tab.is_visible():
+                tab.evaluate("(element) => element.click()")
+                return
+            # Gradio collapses excess tabs behind the final overflow button.
+            # Open that menu, then select the requested tab from its entries.
+            overflow = page.locator('[role="tablist"] button').last
+            if overflow.count() and overflow.is_visible():
+                overflow.click()
+                page.wait_for_timeout(150)
+                menu_item = page.get_by_role("button", name=name)
+                if menu_item.count() and menu_item.is_visible():
+                    menu_item.click()
+                    return
+            page.wait_for_timeout(250)
         except Exception as exc:
             last_error = exc
             page.wait_for_timeout(250)
