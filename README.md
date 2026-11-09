@@ -13,7 +13,7 @@
   <img src="https://img.shields.io/badge/license-MIT-22c55e" alt="MIT License"/>
 </p>
 
-> **Project status: early integration build.** The UI and processing stages are integrated with automated regression coverage, but clean-machine installation and a complete real-audio conversion have not yet been verified. The 3D-style banner is decorative project artwork; the application itself is a local Gradio interface.
+> **Project status: integration build.** The current `main` branch passes its Linux test suite and Windows smoke checks on Python 3.11 and 3.12. Real Demucs inference, pinned RVC asset verification, headless Gradio startup, and browser callback checks are included in Windows CI. A clean-machine installation and a complete real RVC conversion with an authorized checkpoint are still pending. The 3D-style banner is decorative project artwork; the application itself is a local Gradio interface.
 
 ---
 
@@ -42,7 +42,7 @@ OneClick-AI-Cover is designed to take an audio track through a local workflow:
 
 ### Free public model browser
 
-The **Free Model Browser** tab optionally searches public Hugging Face model-card metadata and downloads a user-selected public `.pth` file. No Hub token or paid inference endpoint is required. Public Hub access remains subject to Hugging Face's current rate limits, bandwidth policies, and repository terms. Review the model card, license, and voice permissions before downloading. Downloads are quarantined under `models/unverified/` and do not become selectable until separately imported. The **Model Preflight** tab scans selected `.pth` ZIP metadata without calling `pickle.load()` or `torch.load()`. It reports common RVC marker strings only; it cannot validate tensor dimensions, certify compatibility, or make a model safe. The RVC backend may still deserialize imported weights unsafely, so use only publishers you trust. Local manual model import remains available.
+The **Free Model Browser** tab optionally searches public Hugging Face model-card metadata and downloads a user-selected public `.pth` file. No Hub token or paid inference endpoint is required. Public Hub access remains subject to Hugging Face's current rate limits, bandwidth policies, and repository terms. Review the model card, license, and voice permissions before downloading. Downloads are quarantined under `models/unverified/` and do not become selectable until separately imported. The **Model Preflight** tab scans selected `.pth` ZIP metadata without calling `pickle.load()` or `torch.load()`. It reports common RVC marker strings only; it cannot validate tensor dimensions, certify compatibility, or make a model safe. Import and generation require a separate explicit trust acknowledgement. That acknowledgement is not a sandbox: the RVC backend may deserialize pickle payloads while loading a checkpoint. Use only files from publishers you personally trust. Local manual model import remains available.
 
 See [free-tier architecture](docs/FREE_TIER_ARCHITECTURE.md) for the privacy, licensing, and model-safety boundaries.
 
@@ -54,7 +54,7 @@ See [free-tier architecture](docs/FREE_TIER_ARCHITECTURE.md) for the privacy, li
 - **Voice conversion:** a command-line adapter invokes a compatible RVC inference backend and model.
 - **Audio mixing:** converted vocals are sample-rate matched and mixed with the instrumental.
 - **Export:** WAV output, with optional MP3 export through FFmpeg.
-- **Voice utilities:** import an inference-ready `.pth` model and prepare voice recordings as mono WAV files.
+- **Voice utilities:** import an inference-ready `.pth` model and prepare voice recordings as mono WAV files. Model import and generation are guarded by explicit checkpoint-trust confirmation.
 - **Experimental training access:** a tab can launch the upstream RVC training interface; this is not yet a one-click training pipeline.
 
 ## Quick start (Windows)
@@ -89,23 +89,23 @@ Audio file (MP3 / WAV / FLAC)
  Sample-rate matching -> Mix -> WAV / optional MP3
 ```
 
-The main interface is in `app.py`. Audio utilities live in `src/oneclick_cover/audio_utils.py`; automated tests are in `tests/`. The animated README artwork is built from `readme-hero.svg` and `readme-pipeline-3d.svg`. Both are lightweight SVG assets and are **not runtime dependencies**. The app itself remains a Gradio interface; this update adds a 3D visual identity to the repository documentation, not a 3D application UI.
+The main interface is in `app.py`. Application modules live in `src/oneclick_cover/`; the RVC adapter and Demucs runner are under `scripts/`. Automated regression tests are in `tests/`. The animated README artwork is built from `readme-hero.svg` and `readme-pipeline-3d.svg`. Both are lightweight SVG assets and are **not runtime dependencies**. The app itself remains a Gradio interface; the 3D artwork is documentation only, not a 3D application UI.
 
 ## Verification status
 
 | Area | Current status | Evidence / next step |
 |---|---|---|
-| Source checks and automated regression tests | CI checked | [Tests workflow](https://github.com/ViviBeri/OneClick-AI-Cover/actions/workflows/tests.yml) |
-| Windows dependency/import and startup checks | CI checked | [Windows Checks workflow](https://github.com/ViviBeri/OneClick-AI-Cover/actions/workflows/windows-checks.yml) |
-| Pinned HuBERT/RMVPE downloads and checksum verification | **Passed on Windows CI (Python 3.11)** | All four assets passed size and SHA-256 verification in [Windows Checks run #42493399061](https://github.com/ViviBeri/OneClick-AI-Cover/actions/runs/42493399061); Python 3.11 skips the duplicate download. |
-| Static model preflight and quarantine regression tests | CI passed | [Tests workflow](https://github.com/ViviBeri/OneClick-AI-Cover/actions/workflows/tests.yml) |
+| Source checks and automated regression tests | **Passed on current main** | [Tests run #42655809246](https://github.com/ViviBeri/OneClick-AI-Cover/actions/runs/42655809246) — Python 3.11 and 3.12. |
+| Windows dependency/import and startup checks | **Passed on current main** | [Windows Checks run #42655809194](https://github.com/ViviBeri/OneClick-AI-Cover/actions/runs/42655809194) — Python 3.11 and 3.12. |
+| Pinned HuBERT/RMVPE downloads and checksum verification | **Passed on Windows CI (Python 3.11)** | All four assets passed size and SHA-256 verification in [Windows Checks run #42493399061](https://github.com/ViviBeri/OneClick-AI-Cover/actions/runs/42493399061); the current Windows workflow runs this download once to avoid duplicate downloads. |
+| Static model preflight, quarantine, and trust-acknowledgement regression tests | **Passed on current main** | Included in [Tests run #42655809246](https://github.com/ViviBeri/OneClick-AI-Cover/actions/runs/42655809246). |
 | Clean Windows 10/11 x64 installation | **Pending manual verification** | [Issue #1](https://github.com/ViviBeri/OneClick-AI-Cover/issues/1) |
 | Managed FFmpeg MP3 import/export on Windows | **Pending manual verification** | [Issue #2](https://github.com/ViviBeri/OneClick-AI-Cover/issues/2) |
 | Full authorized-audio conversion (Demucs → RVC → mix → export) | **Pending manual verification** | [Issue #3](https://github.com/ViviBeri/OneClick-AI-Cover/issues/3) |
 | Clean uninstall / app-managed file removal | **Pending** | [Verification plan](docs/verification.md#section-6-uninstall-verification) |
 | Signed release installer and official SHA-256 | **Not published** | No versioned release artifact is available yet |
 
-Automated tests cover sample-rate matching, mono-vocal mixing, stale or invalid RVC output rejection, mocked success/failure paths for Demucs/RVC/MP3 export, stale-file cleanup after FFmpeg failures, and partial job-folder cleanup. **Mocked pipeline tests do not prove real RVC inference, sound quality, or end-to-end conversion.** A green CI run is not a substitute for a clean-machine installation test.
+Automated tests cover sample-rate matching, mono-vocal mixing, stale or invalid RVC output rejection, mocked success/failure paths for Demucs/RVC/MP3 export, stale-file cleanup after FFmpeg failures, partial job-folder cleanup, model quarantine, static checkpoint preflight, and checkpoint-trust guards. Windows CI additionally runs real Demucs inference and a Gradio browser callback smoke test. **Mocked RVC pipeline tests do not prove real RVC inference, sound quality, or end-to-end conversion.** A green CI run is not a substitute for a clean-machine installation test.
 
 See the [verification plan](docs/verification.md) and [evidence template](verification-results/TEMPLATE.md). Do not mark a manual verification item complete until the acceptance criteria and evidence are recorded.
 
@@ -156,15 +156,6 @@ This remains an advanced, partly manual workflow. The [voice-training guide](doc
 
 </details>
 
-- [Voice training](docs/voice-training.md)
-- [Remote training options](docs/remote-training.md)
-- [Verification checklist](docs/verification.md)
-- [Legal and ethical use](docs/ETHICS_AND_LEGAL.md)
-- [Third-party dependencies and licenses](docs/THIRD_PARTY.md)
-- [Community guidelines](docs/COMMUNITY.md)
-- [Contributing](CONTRIBUTING.md)
-- [Security policy](SECURITY.md)
-
 ## Engineering build log
 
 - [Build Log 01 — Designing a Local-First AI Audio Workflow](docs/BUILD_LOG_01_LOCAL_AI_AUDIO_WORKFLOW.md): pipeline architecture, model handling boundaries, failure checks, CI scope, and remaining real-world verification.
@@ -179,6 +170,7 @@ This remains an advanced, partly manual workflow. The [voice-training guide](doc
 - [x] Failure handling and stale output cleanup
 - [x] Public model download quarantine and regression tests
 - [x] Static non-deserializing RVC checkpoint preflight and regression tests
+- [x] Explicit trust acknowledgement before checkpoint import and generation
 - [ ] Verify installer on a clean Windows machine
 - [ ] Verify full conversion with authorized audio and a compatible model
 - [ ] Profile memory, CPU and GPU performance
