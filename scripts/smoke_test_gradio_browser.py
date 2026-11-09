@@ -26,12 +26,17 @@ def click_gradio_tab(page, name: str) -> None:
             # Open that menu, then select the requested tab from its entries.
             overflow = page.locator('[role="tablist"] button').last
             if overflow.count() and overflow.is_visible():
-                overflow.click()
+                overflow.evaluate("(element) => element.click()")
                 page.wait_for_timeout(150)
-                menu_item = page.get_by_role("button", name=name)
-                if menu_item.count() and menu_item.is_visible():
-                    menu_item.click()
-                    return
+                # Gradio renders overflow entries as menu buttons that may
+                # remain marked hidden to accessibility APIs during animation.
+                menu_item = page.locator("button").filter(has_text=name).last
+                if menu_item.count():
+                    menu_item.evaluate("(element) => element.click()")
+                    page.wait_for_timeout(150)
+                    active = page.get_by_role("tab", name=name)
+                    if active.count() and active.get_attribute("aria-selected") == "true":
+                        return
             page.wait_for_timeout(250)
         except Exception as exc:
             last_error = exc
