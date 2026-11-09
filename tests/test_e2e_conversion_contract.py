@@ -12,17 +12,16 @@ def test_real_conversion_requires_and_forwards_model_trust_acknowledgement():
     tree = ast.parse(source)
 
     trust_guard = any(
-        isinstance(node, ast.Compare)
-        and isinstance(node.left, ast.Call)
-        and isinstance(node.left.func, ast.Attribute)
-        and isinstance(node.left.func.value, ast.Attribute)
-        and isinstance(node.left.func.value.value, ast.Name)
-        and node.left.func.value.value.id == "os"
-        and node.left.func.value.attr == "environ"
-        and node.left.func.attr == "get"
+        isinstance(node, ast.Call)
+        and isinstance(node.func, ast.Attribute)
+        and node.func.attr == "get"
+        and isinstance(node.func.value, ast.Attribute)
+        and node.func.value.attr == "environ"
+        and isinstance(node.func.value.value, ast.Name)
+        and node.func.value.value.id == "os"
         and any(
             isinstance(arg, ast.Constant) and arg.value == "MODEL_TRUST_CONFIRMED"
-            for arg in node.left.args
+            for arg in node.args
         )
         for node in ast.walk(tree)
     )
