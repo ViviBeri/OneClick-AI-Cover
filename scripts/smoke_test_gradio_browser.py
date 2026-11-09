@@ -27,7 +27,12 @@ def click_gradio_tab(page, name: str) -> None:
         except Exception as exc:
             last_error = exc
             page.wait_for_timeout(250)
-    raise RuntimeError(f"Could not activate Gradio tab {name!r}: {last_error}")
+    diagnostics = page.locator('[role="tablist"]').evaluate(
+        "(element) => ({html: element.outerHTML, buttons: [...document.querySelectorAll('button')].map((button) => ({text: button.innerText, label: button.getAttribute('aria-label'), title: button.title, html: button.outerHTML.slice(0, 500)}))})"
+    )
+    raise RuntimeError(
+        f"Could not activate Gradio tab {name!r}: {last_error}; DOM: {diagnostics}"
+    )
 
 
 def main() -> int:
