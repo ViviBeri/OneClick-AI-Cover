@@ -34,8 +34,9 @@ def click_gradio_tab(page, name: str) -> None:
                 if menu_item.count():
                     menu_item.evaluate("(element) => element.click()")
                     page.wait_for_timeout(150)
-                    active = page.get_by_role("tab", name=name)
-                    if active.count() and active.get_attribute("aria-selected") == "true":
+                    # Overflow entries are not role=tab elements. Gradio marks
+                    # the selected entry with its selected class instead.
+                    if "selected" in (menu_item.get_attribute("class") or "").split():
                         return
             page.wait_for_timeout(250)
         except Exception as exc:
