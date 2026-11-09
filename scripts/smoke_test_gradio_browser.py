@@ -51,7 +51,9 @@ def main() -> int:
             else:
                 raise TimeoutError(f"Gradio app did not start: {last_error}")
 
-            page.get_by_role("tab", name="Import Voice Model").click()
+            import_tab = page.get_by_role("tab", name="Import Voice Model")
+            expect(import_tab).to_be_visible(timeout=10000)
+            import_tab.click(force=True, timeout=10000)
             # Gradio 6 does not consistently associate the visible component label
             # with its hidden file input. Both model-preflight and import tabs accept
             # .pth files, so the final matching input is the import control.
@@ -91,7 +93,9 @@ def main() -> int:
                     timeout=15000,
                 )
 
-            page.get_by_role("tab", name="Generate Cover").click()
+            generate_tab = page.get_by_role("tab", name="Generate Cover")
+            expect(generate_tab).to_be_visible(timeout=10000)
+            generate_tab.click(force=True, timeout=10000)
             page.get_by_role("button", name="Refresh models").click()
             expect(page.get_by_label("RVC voice model (.pth)")).to_have_value(
                 "browser-smoke-model.pth", timeout=15000
