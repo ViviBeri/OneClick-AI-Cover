@@ -70,7 +70,9 @@ def main() -> int:
                     "I trust this .pth checkpoint and its publisher, and understand that importing it does not sandbox the file."
                 )
                 import_trust.check()
-                replacement = Path(temporary) / "replacement-model.pth"
+                replacement_dir = Path(temporary) / "replacement"
+                replacement_dir.mkdir()
+                replacement = replacement_dir / "browser-smoke-model.pth"
                 replacement.write_bytes(b"replacement browser smoke test" + bytes(2048))
                 upload.set_input_files(str(replacement), timeout=10000)
                 expect(import_trust).not_to_be_checked(timeout=10000)
