@@ -80,7 +80,7 @@ def prepare_training_dataset(uploaded_files, dataset_name, progress=gr.Progress(
         logging.exception("Dataset preparation failed")
         raise gr.Error(str(exc)) from exc
 
-def generate(song, model, pitch, vocal_gain, instrumental_gain, fmt, demucs_device="cpu", demucs_segment=5.0, demucs_timeout=1800, progress=gr.Progress(), trust_confirmed=False):
+def generate(song, model, pitch, vocal_gain, instrumental_gain, fmt, demucs_device="cpu", demucs_segment=5.0, demucs_timeout=1800, trust_confirmed=False, progress=gr.Progress()):
     if not song: raise gr.Error("Choose an input song first.")
     if not model: raise gr.Error("Add an authorized .pth model to models/voices, then refresh.")
     if not trust_confirmed:
