@@ -74,7 +74,15 @@ def main() -> int:
                 replacement_dir.mkdir()
                 replacement = replacement_dir / "browser-smoke-model.pth"
                 replacement.write_bytes(b"replacement browser smoke test" + bytes(2048))
-                upload.set_input_files(str(replacement), timeout=10000)
+
+                # Gradio replaces the file input with a file preview after upload.
+                # Clear the first selection before locating the newly rendered input.
+                clear_file = page.get_by_role("button", name="Clear")
+                expect(clear_file.last).to_be_visible(timeout=10000)
+                clear_file.last.click()
+                replacement_upload = page.locator('input[type="file"][accept*=".pth"]').last
+                replacement_upload.wait_for(state="attached", timeout=10000)
+                replacement_upload.set_input_files(str(replacement), timeout=10000)
                 expect(import_trust).not_to_be_checked(timeout=10000)
                 import_trust.check()
                 page.get_by_role("button", name="Import model").click()
