@@ -21,11 +21,10 @@ def check_imports() -> None:
 
     import torch
     import torchaudio
-
-    if not torch.__version__.startswith("2.8.0"):
-        raise RuntimeError(f"Expected PyTorch 2.8.0, found {torch.__version__}")
-    if not torchaudio.__version__.startswith("2.8.0"):
-        raise RuntimeError(f"Expected torchaudio 2.8.0, found {torchaudio.__version__}")
+    if not torch.__version__.startswith("2.13.0"):
+        raise RuntimeError(f"Expected PyTorch 2.13.0, found {torch.__version__}")
+    if not torchaudio.__version__.startswith("2.11.1"):
+        raise RuntimeError(f"Expected torchaudio 2.11.1, found {torchaudio.__version__}")
     if torch.version.cuda is not None:
         raise RuntimeError(f"Expected CPU-only PyTorch, found CUDA build {torch.version.cuda}")
     print(f"CPU PyTorch verified: torch {torch.__version__}, torchaudio {torchaudio.__version__}")

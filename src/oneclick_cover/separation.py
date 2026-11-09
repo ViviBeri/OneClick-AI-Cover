@@ -56,10 +56,10 @@ def separate_vocals(
     job_dir = Path(job_dir)
     output_root = job_dir / "separated"
     output_root.mkdir(parents=True, exist_ok=True)
+    demucs_runner = Path(__file__).resolve().parents[2] / "scripts" / "demucs_runner.py"
     command = [
         sys.executable,
-        "-m",
-        "demucs.separate",
+        str(demucs_runner),
         "--two-stems",
         "vocals",
         "-n",

@@ -39,8 +39,8 @@ echo [3/7] Creating the app environment...
 if not exist ".venv\Scripts\python.exe" "%UV_EXE%" venv --python 3.11 .venv
 if errorlevel 1 goto failed
 set "SETUP_STAGE=Installing pinned CPU PyTorch for Demucs"
-echo Installing CPU PyTorch 2.8.0 and torchaudio 2.8.0 from the official PyTorch wheel index...
-"%UV_EXE%" pip install --python ".venv\Scripts\python.exe" --index-url https://download.pytorch.org/whl/cpu torch==2.8.0 torchaudio==2.8.0
+echo Installing CPU PyTorch 2.13.0, torchaudio 2.11.1 from the official PyTorch wheel index...
+"%UV_EXE%" pip install --python ".venv\Scripts\python.exe" --index-url https://download.pytorch.org/whl/cpu torch==2.13.0 torchaudio==2.11.1
 if errorlevel 1 goto failed
 "%UV_EXE%" pip install --python ".venv\Scripts\python.exe" --index-url https://pypi.org/simple -e .
 if errorlevel 1 goto failed
@@ -90,7 +90,7 @@ echo [6/7] Downloading pinned HuBERT and RMVPE assets from the public Hugging Fa
 if errorlevel 1 goto failed
 set "SETUP_STAGE=Checking app dependencies"
 echo [7/7] Checking app imports...
-".venv\Scripts\python.exe" -c "import gradio, demucs, soundfile, torch, torchaudio; assert torch.__version__.startswith('2.8.0'); assert torchaudio.__version__.startswith('2.8.0'); assert torch.version.cuda is None; print('UI, Demucs, and pinned CPU PyTorch dependencies are available.')"
+".venv\Scripts\python.exe" -c "import gradio, demucs, soundfile, torch, torchaudio; assert torch.__version__.startswith('2.13.0'); assert torchaudio.__version__.startswith('2.11.1'); assert torch.version.cuda is None; print('UI, Demucs, and pinned CPU PyTorch and torchaudio dependencies are available.')"
 if errorlevel 1 goto failed
 echo.
 echo Setup completed. Double-click run.bat to launch OneClick-AI-Cover.
