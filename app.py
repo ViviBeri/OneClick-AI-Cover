@@ -19,7 +19,9 @@ def models(): return sorted(p.name for p in VOICE_DIR.glob("*.pth") if p.is_file
 def refresh_models():
     choices = models()
     return gr.Dropdown(choices=choices, value=(choices[0] if choices else None))
-def import_voice_model(uploaded_file):
+def import_voice_model(uploaded_file, trust_confirmed=False):
+    if not trust_confirmed:
+        raise gr.Error("Trust acknowledgement required. RVC may deserialize .pth pickle payloads and execute code; this checkbox does not sandbox the checkpoint.")
     if not uploaded_file:
         raise gr.Error("Choose a .pth voice model file first.")
     source = Path(uploaded_file)
@@ -78,9 +80,11 @@ def prepare_training_dataset(uploaded_files, dataset_name, progress=gr.Progress(
         logging.exception("Dataset preparation failed")
         raise gr.Error(str(exc)) from exc
 
-def generate(song, model, pitch, vocal_gain, instrumental_gain, fmt, demucs_device="cpu", demucs_segment=5.0, demucs_timeout=1800, progress=gr.Progress()):
+def generate(song, model, pitch, vocal_gain, instrumental_gain, fmt, demucs_device="cpu", demucs_segment=5.0, demucs_timeout=1800, progress=gr.Progress(), trust_confirmed=False):
     if not song: raise gr.Error("Choose an input song first.")
     if not model: raise gr.Error("Add an authorized .pth model to models/voices, then refresh.")
+    if not trust_confirmed:
+        raise gr.Error("Trust acknowledgement required. RVC may deserialize .pth pickle payloads and execute code; this checkbox does not sandbox the checkpoint.")
     job = None
     try:
         source=Path(song); validate_audio_file(source); model_path=(VOICE_DIR/model).resolve()
@@ -120,6 +124,7 @@ Your files are processed locally by default. This app does not automatically upl
             with gr.Row():
                 song=gr.File(label="Song (MP3/WAV/FLAC)",file_types=[".mp3",".wav",".flac"],type="filepath")
                 model=gr.Dropdown(label="RVC voice model (.pth)",choices=models())
+            trust_generate=gr.Checkbox(label="I trust this .pth checkpoint and its publisher. I understand RVC may deserialize pickle data and execute code; this acknowledgement does not sandbox the file.",value=False)
             refresh=gr.Button("Refresh models")
             refresh.click(refresh_models, inputs=[], outputs=model)
             pitch=gr.Slider(-12,12,value=0,step=1,label="Pitch shift")
@@ -133,7 +138,7 @@ Your files are processed locally by default. This app does not automatically upl
             go=gr.Button("Generate cover",variant="primary")
             audio=gr.Audio(type="filepath",label="Finished cover")
             status=gr.Textbox(label="Status")
-            go.click(generate,inputs=[song,model,pitch,vocal_gain,instrumental_gain,fmt,demucs_device,demucs_segment,demucs_timeout],outputs=[audio,status])
+            go.click(generate,inputs=[song,model,pitch,vocal_gain,instrumental_gain,fmt,demucs_device,demucs_segment,demucs_timeout,trust_generate],outputs=[audio,status])
         with gr.Tab("Prepare Voice Recordings"):
             gr.Markdown("""## Prepare your own voice recordings
 Upload recordings of your own voice, or recordings you have explicit permission to use. The app converts each file to mono WAV and stores it in a local dataset folder. Recordings are not uploaded to a cloud service by this step.
@@ -196,11 +201,12 @@ Search public model-card metadata without an account or API token. Search result
             hf_search.click(fn=search_hf_models,inputs=[hf_query],outputs=[hf_results])
             hf_download.click(fn=download_hf_model,inputs=[hf_repo,hf_filename,hf_confirm],outputs=[model,hf_status])
         with gr.Tab("Import Voice Model"):
-            gr.Markdown("## Import a trained RVC model\nUpload an inference-ready .pth file you created or are authorized to use. The model is copied into this app's local models/voices folder.")
+            gr.Markdown("## Import a trained RVC model\nUpload an inference-ready .pth file you created or are authorized to use. The model is copied into this app's local models/voices folder.\n\n**Security warning:** RVC may deserialize `.pth` pickle payloads and execute code. Only import a checkpoint from a publisher you personally trust. The acknowledgement below does not sandbox or prove the file is safe.")
             model_upload=gr.File(label="RVC model (.pth)",file_types=[".pth"],type="filepath")
+            import_trust=gr.Checkbox(label="I trust this .pth checkpoint and its publisher, and understand that importing it does not sandbox the file.",value=False)
             import_button=gr.Button("Import model",variant="primary")
             import_status=gr.Textbox(label="Import status",interactive=False)
-            import_button.click(fn=import_voice_model,inputs=[model_upload],outputs=[model,import_status])
+            import_button.click(fn=import_voice_model,inputs=[model_upload,import_trust],outputs=[model,import_status])
         with gr.Tab("System"):
             gr.Markdown(f"- Python: `{sys.version.split()[0]}`\n- Voice models folder: `{VOICE_DIR}`\n- Dataset folder: `{ROOT / 'datasets'}`\n- Output folder: `{OUTPUT_DIR}`\n- Log file: `{LOG_DIR / 'oneclick-cover.log'}`")
 if __name__=="__main__": demo.launch(server_name="127.0.0.1",server_port=7860,inbrowser=True,show_error=True)
