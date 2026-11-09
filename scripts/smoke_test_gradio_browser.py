@@ -36,7 +36,7 @@ def click_gradio_tab(page, name: str) -> None:
                     page.wait_for_timeout(150)
                     # Overflow entries are not role=tab elements. Gradio marks
                     # the selected entry with its selected class instead.
-                    selected = page.locator('[role="tablist"]').evaluate(
+                    selected = page.locator("body").evaluate(
                         "(element, target) => [...element.querySelectorAll('button')].some((button) => button.innerText.trim() === target && button.classList.contains('selected'))",
                         name,
                     )
