@@ -66,6 +66,25 @@ def main() -> int:
                 candidate = Path(temporary) / "browser-smoke-model.pth"
                 candidate.write_bytes(b"browser callback smoke test" + bytes(2048))
                 upload.set_input_files(str(candidate), timeout=10000)
+                import_trust = page.get_by_label(
+                    "I trust this .pth checkpoint and its publisher, and understand that importing it does not sandbox the file."
+                )
+                import_trust.check()
+                replacement_dir = Path(temporary) / "replacement"
+                replacement_dir.mkdir()
+                replacement = replacement_dir / "browser-smoke-model.pth"
+                replacement.write_bytes(b"replacement browser smoke test" + bytes(2048))
+
+                # Gradio replaces the file input with a file preview after upload.
+                # Clear the first selection before locating the newly rendered input.
+                clear_file = page.get_by_role("button", name="Clear")
+                expect(clear_file.last).to_be_visible(timeout=10000)
+                clear_file.last.click()
+                replacement_upload = page.locator('input[type="file"][accept*=".pth"]').last
+                replacement_upload.wait_for(state="attached", timeout=10000)
+                replacement_upload.set_input_files(str(replacement), timeout=10000)
+                expect(import_trust).not_to_be_checked(timeout=10000)
+                import_trust.check()
                 page.get_by_role("button", name="Import model").click()
                 expect(page.get_by_label("Import status")).to_have_value(
                     "Imported browser-smoke-model.pth. You can now select it under Generate Cover.",
