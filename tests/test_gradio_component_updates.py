@@ -25,7 +25,7 @@ def test_import_voice_model_returns_updated_dropdown(monkeypatch, tmp_path):
     monkeypatch.setattr(app, "validate_voice_model", lambda path: None)
     monkeypatch.setattr(app, "models", lambda: ["voice.pth"])
 
-    result, message = app.import_voice_model(str(source))
+    result, message = app.import_voice_model(str(source), True)
 
     assert isinstance(result, gr.Dropdown)
     assert result.choices == [("voice.pth", "voice.pth")]
@@ -51,3 +51,14 @@ def test_downloaded_unverified_model_does_not_change_selection(monkeypatch, tmp_
     assert result == gr.skip()
     assert "Download complete." in message
     assert "stored outside the active voice-model folder" in message
+
+
+
+def test_import_voice_model_requires_explicit_trust(monkeypatch, tmp_path):
+    import pytest
+
+    source = tmp_path / "untrusted.pth"
+    source.write_bytes(b"test model")
+
+    with pytest.raises(gr.Error, match="Trust acknowledgement required"):
+        app.import_voice_model(str(source), False)
