@@ -108,7 +108,76 @@ def generate(song, model, pitch, vocal_gain, instrumental_gain, fmt, demucs_devi
         if job is not None:
             shutil.rmtree(job, ignore_errors=True)
         logging.exception("Cover generation failed"); raise gr.Error(str(e)) from e
-with gr.Blocks(title="OneClick-AI-Cover") as demo:
+APP_CSS = """
+/* Keep the local Gradio interface comfortable on phones and tablets. */
+.gradio-container {
+    width: min(100%, 1120px) !important;
+    margin-inline: auto !important;
+    padding-inline: clamp(0.75rem, 3vw, 1.5rem) !important;
+}
+.gradio-container button,
+.gradio-container input,
+.gradio-container select,
+.gradio-container textarea {
+    min-height: 2.75rem;
+}
+.gradio-container button {
+    touch-action: manipulation;
+}
+.gradio-container audio {
+    width: 100%;
+}
+@media (max-width: 700px) {
+    .gradio-container {
+        padding: 0.75rem !important;
+    }
+    .gradio-container .row,
+    .gradio-container .gradio-row {
+        flex-direction: column !important;
+        align-items: stretch !important;
+        gap: 0.75rem !important;
+    }
+    .gradio-container .column,
+    .gradio-container .gradio-column {
+        min-width: 0 !important;
+        width: 100% !important;
+    }
+    .gradio-container button {
+        width: 100%;
+    }
+    .gradio-container input,
+    .gradio-container textarea,
+    .gradio-container select {
+        font-size: 16px !important;
+    }
+    .gradio-container .tab-nav {
+        overflow-x: auto !important;
+        flex-wrap: nowrap !important;
+        scrollbar-width: thin;
+        -webkit-overflow-scrolling: touch;
+    }
+    .gradio-container .tab-nav button {
+        width: auto;
+        min-width: max-content;
+        white-space: nowrap;
+    }
+    .gradio-container h1 {
+        font-size: 1.65rem !important;
+        line-height: 1.2 !important;
+    }
+}
+@media (prefers-reduced-motion: reduce) {
+    .gradio-container *,
+    .gradio-container *::before,
+    .gradio-container *::after {
+        scroll-behavior: auto !important;
+        animation-duration: 0.01ms !important;
+        transition-duration: 0.01ms !important;
+    }
+}
+"""
+
+with gr.Blocks(title="OneClick-AI-Cover", css=APP_CSS) as demo:
     gr.Markdown("""# OneClick-AI-Cover
 **Free • Local-first • No paid API required**
 
