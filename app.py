@@ -285,7 +285,7 @@ APP_CSS = """
 }
 """
 
-with gr.Blocks(title="OneClick AI Cover — Studio", elem_id="oneclick-studio", theme=gr.themes.Soft(primary_hue="violet", secondary_hue="cyan", neutral_hue="slate")) as demo:
+with gr.Blocks(title="OneClick AI Cover — Studio", elem_id="oneclick-studio") as demo:
     gr.HTML("""
     <section class="studio-hero">
       <div>
@@ -395,4 +395,4 @@ Search public model-card metadata without an account or API token. Search result
             import_button.click(fn=import_voice_model,inputs=[model_upload,import_trust],outputs=[model,import_status])
         with gr.Tab("System"):
             gr.Markdown(f"- Python: `{sys.version.split()[0]}`\n- Voice models folder: `{VOICE_DIR}`\n- Dataset folder: `{ROOT / 'datasets'}`\n- Output folder: `{OUTPUT_DIR}`\n- Log file: `{LOG_DIR / 'oneclick-cover.log'}`")
-if __name__=="__main__": demo.launch(server_name="127.0.0.1",server_port=7860,inbrowser=True,show_error=True,css=APP_CSS)
+if __name__=="__main__": demo.launch(server_name="127.0.0.1",server_port=7860,inbrowser=True,show_error=True,theme=gr.themes.Soft(primary_hue="violet", secondary_hue="cyan", neutral_hue="slate"),css=APP_CSS)
