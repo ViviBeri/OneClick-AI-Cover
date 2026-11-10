@@ -1,10 +1,21 @@
-from threading import Event
 from pathlib import Path
+from threading import Event
+from time import monotonic, sleep
 
 import pytest
 
 from oneclick_cover.jobs import JobStatus
 from oneclick_cover.runner import LocalJobRunner
+
+
+def wait_for_status(runner, job_id, expected, timeout=3):
+    deadline = monotonic() + timeout
+    while monotonic() < deadline:
+        job = runner.get(job_id)
+        if job is not None and job.status is expected:
+            return job
+        sleep(0.01)
+    return runner.get(job_id)
 
 
 def test_runner_executes_task_and_publishes_progress_and_result(tmp_path):
@@ -21,7 +32,7 @@ def test_runner_executes_task_and_publishes_progress_and_result(tmp_path):
     try:
         job = runner.submit(task)
         assert finished.wait(3)
-        result = runner.get(job.id)
+        result = wait_for_status(runner, job.id, JobStatus.COMPLETED)
         assert result is not None
         assert result.status is JobStatus.COMPLETED
         assert result.progress == 1.0
@@ -32,20 +43,13 @@ def test_runner_executes_task_and_publishes_progress_and_result(tmp_path):
 
 def test_runner_records_task_failure():
     runner = LocalJobRunner()
-    finished = Event()
 
     def task(progress):
         raise RuntimeError("pipeline failed")
 
     try:
         job = runner.submit(task)
-        for _ in range(300):
-            result = runner.get(job.id)
-            if result and result.status is JobStatus.FAILED:
-                finished.set()
-                break
-            finished.wait(0.01)
-        result = runner.get(job.id)
+        result = wait_for_status(runner, job.id, JobStatus.FAILED)
         assert result is not None
         assert result.status is JobStatus.FAILED
         assert result.error == "pipeline failed"
