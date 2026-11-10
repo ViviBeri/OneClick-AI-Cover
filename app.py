@@ -3,6 +3,7 @@ import logging, sys, tempfile, shutil
 from pathlib import Path
 import gradio as gr
 sys.path.insert(0, str(Path(__file__).resolve().parent / "src"))
+from oneclick_cover import audio_utils
 from oneclick_cover.audio_utils import match_sample_rate, mix_audio, probe_audio, transcode_to_wav
 from oneclick_cover.settings import VOICE_DIR, OUTPUT_DIR, LOG_DIR
 from oneclick_cover.validation import validate_audio_file, validate_voice_model
@@ -108,7 +109,7 @@ def generate(song, model, pitch, vocal_gain, instrumental_gain, fmt, demucs_devi
             transcode_fn=transcode_to_wav,
             separate_fn=separate_vocals,
             convert_fn=convert_voice,
-            export_mp3_fn=__import__("oneclick_cover.audio_utils", fromlist=["export_mp3"]).export_mp3,
+            export_mp3_fn=audio_utils.export_mp3,
             validate_audio_fn=validate_audio_file,
             validate_model_fn=validate_voice_model,
         )
