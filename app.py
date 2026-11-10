@@ -108,6 +108,7 @@ def generate(song, model, pitch, vocal_gain, instrumental_gain, fmt, demucs_devi
             transcode_fn=transcode_to_wav,
             separate_fn=separate_vocals,
             convert_fn=convert_voice,
+            export_mp3_fn=__import__("oneclick_cover.audio_utils", fromlist=["export_mp3"]).export_mp3,
             validate_audio_fn=validate_audio_file,
             validate_model_fn=validate_voice_model,
         )
