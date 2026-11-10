@@ -174,7 +174,8 @@ This remains an advanced, partly manual workflow. The [voice-training guide](doc
 - [ ] Verify installer on a clean Windows machine
 - [ ] Verify full conversion with authorized audio and a compatible model
 - [ ] Benchmark memory, CPU and GPU performance and define low-resource profiles
-- [x] Extract the local processing pipeline from Gradio handlers and add a tested process-local job state store\n- [ ] Add a local job API and connect the UI to job status, cancellation, and result retrieval
+- [x] Extract the local processing pipeline from Gradio handlers and add a tested process-local job state store
+- [ ] Add a local job API and connect the UI to job status, cancellation, and result retrieval
 - [ ] Redesign the responsive browser UI while retaining local processing
 - [ ] Evaluate optional remote inference only after privacy, security, consent, and cost requirements are met
 - [ ] Complete and verify remote training/checkpoint export workflow
