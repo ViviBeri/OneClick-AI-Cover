@@ -3,11 +3,13 @@ import logging, sys, tempfile, shutil
 from pathlib import Path
 import gradio as gr
 sys.path.insert(0, str(Path(__file__).resolve().parent / "src"))
+from oneclick_cover import audio_utils
 from oneclick_cover.audio_utils import match_sample_rate, mix_audio, probe_audio, transcode_to_wav
 from oneclick_cover.settings import VOICE_DIR, OUTPUT_DIR, LOG_DIR
 from oneclick_cover.validation import validate_audio_file, validate_voice_model
 from oneclick_cover.separation import separate_vocals
 from oneclick_cover.conversion import convert_voice
+from oneclick_cover.pipeline import run_cover_pipeline
 from oneclick_cover.training import launch_training_ui
 from oneclick_cover.dataset import prepare_recordings
 from oneclick_cover.settings import ROOT
@@ -85,29 +87,37 @@ def generate(song, model, pitch, vocal_gain, instrumental_gain, fmt, demucs_devi
     if not model: raise gr.Error("Add an authorized .pth model to models/voices, then refresh.")
     if not trust_confirmed:
         raise gr.Error("Trust acknowledgement required. RVC may deserialize .pth pickle payloads and execute code; this checkbox does not sandbox the checkpoint.")
-    job = None
+
+    source = Path(song)
+    model_path = (VOICE_DIR / model).resolve()
+    if model_path.parent != VOICE_DIR.resolve():
+        raise gr.Error("Invalid voice-model selection.")
+
     try:
-        source=Path(song); validate_audio_file(source); model_path=(VOICE_DIR/model).resolve()
-        if model_path.parent != VOICE_DIR.resolve(): raise ValueError("Invalid voice-model selection.")
-        validate_voice_model(model_path)
-        job=Path(tempfile.mkdtemp(prefix="cover_",dir=OUTPUT_DIR)); wav=job/"input.wav"
-        progress(0.1,desc="Preparing audio"); transcode_to_wav(source,wav)
-        progress(0.25,desc="Separating vocals")
-        def update_separation_progress(fraction, message):
-            progress(0.25 + 0.35 * fraction, desc=message or "Separating vocals")
-        vocals,instrumental=separate_vocals(wav,job,progress=update_separation_progress,device=demucs_device,segment=float(demucs_segment),timeout=float(demucs_timeout))
-        progress(0.6,desc="Converting voice"); converted=job/"converted.wav"; convert_voice(vocals,converted,model_path,int(pitch))
-        progress(0.85,desc="Mixing"); output=job/"cover.wav"
-        converted=match_sample_rate(converted,instrumental,job/"converted_matched.wav")
-        mix_audio(converted,instrumental,output,float(vocal_gain),float(instrumental_gain))
-        if fmt=="MP3":
-            from oneclick_cover.audio_utils import export_mp3
-            mp3=job/"cover.mp3"; export_mp3(output,mp3); output=mp3
-        progress(1,desc="Done"); return str(output), "Saved: "+str(output)
-    except Exception as e:
-        if job is not None:
-            shutil.rmtree(job, ignore_errors=True)
-        logging.exception("Cover generation failed"); raise gr.Error(str(e)) from e
+        output = run_cover_pipeline(
+            source,
+            model_path,
+            pitch,
+            vocal_gain,
+            instrumental_gain,
+            fmt,
+            OUTPUT_DIR,
+            demucs_device=demucs_device,
+            demucs_segment=demucs_segment,
+            demucs_timeout=demucs_timeout,
+            progress=lambda fraction, message: progress(fraction, desc=message),
+            transcode_fn=transcode_to_wav,
+            separate_fn=separate_vocals,
+            convert_fn=convert_voice,
+            export_mp3_fn=audio_utils.export_mp3,
+            validate_audio_fn=validate_audio_file,
+            validate_model_fn=validate_voice_model,
+        )
+        return str(output), "Saved: " + str(output)
+    except Exception as exc:
+        logging.exception("Cover generation failed")
+        raise gr.Error(str(exc)) from exc
+
 APP_CSS = """
 :root {
     color-scheme: dark;

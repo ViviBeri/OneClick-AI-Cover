@@ -105,7 +105,7 @@ The main interface is in `app.py`. Application modules live in `src/oneclick_cov
 | Clean uninstall / app-managed file removal | **Pending** | [Verification plan](docs/verification.md#section-6-uninstall-verification) |
 | Signed release installer and official SHA-256 | **Not published** | No versioned release artifact is available yet |
 
-Automated tests cover sample-rate matching, mono-vocal mixing, stale or invalid RVC output rejection, mocked success/failure paths for Demucs/RVC/MP3 export, stale-file cleanup after FFmpeg failures, partial job-folder cleanup, model quarantine, static checkpoint preflight, and checkpoint-trust guards. Windows CI additionally runs real Demucs inference and a Gradio browser callback smoke test. **Mocked RVC pipeline tests do not prove real RVC inference, sound quality, or end-to-end conversion.** A green CI run is not a substitute for a clean-machine installation test.
+Automated tests cover sample-rate matching, mono-vocal mixing, stale or invalid RVC output rejection, mocked success/failure paths for Demucs/RVC/MP3 export, stale-file cleanup after FFmpeg failures, partial job-folder cleanup, model quarantine, static checkpoint preflight, checkpoint-trust guards, UI-independent pipeline execution, and local job-state transitions. The local job store is currently in-process only; no HTTP API or UI polling/cancellation endpoint is exposed yet. Windows CI additionally runs real Demucs inference and a Gradio browser callback smoke test. **Mocked RVC pipeline tests do not prove real RVC inference, sound quality, or end-to-end conversion.** A green CI run is not a substitute for a clean-machine installation test.
 
 See the [verification plan](docs/verification.md) and [evidence template](verification-results/TEMPLATE.md). Do not mark a manual verification item complete until the acceptance criteria and evidence are recorded.
 
@@ -174,7 +174,8 @@ This remains an advanced, partly manual workflow. The [voice-training guide](doc
 - [ ] Verify installer on a clean Windows machine
 - [ ] Verify full conversion with authorized audio and a compatible model
 - [ ] Benchmark memory, CPU and GPU performance and define low-resource profiles
-- [ ] Separate the local processing pipeline from Gradio event handlers behind a tested job interface
+- [x] Extract the local processing pipeline from Gradio handlers and add a tested process-local job state store
+- [ ] Add a local job API and connect the UI to job status, cancellation, and result retrieval
 - [ ] Redesign the responsive browser UI while retaining local processing
 - [ ] Evaluate optional remote inference only after privacy, security, consent, and cost requirements are met
 - [ ] Complete and verify remote training/checkpoint export workflow
