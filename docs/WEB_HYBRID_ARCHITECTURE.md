@@ -74,7 +74,7 @@ The local mode should degrade gracefully rather than promise that every machine 
 
 1. **Stabilize the current engine:** retain regression tests for Demucs, RVC adapter contracts, mixing, cleanup, and output validation.
 2. **Improve the web UI:** responsive layout, clear processing stages, accessible controls, and useful error/progress states while retaining the local backend.
-3. **Define a processing-job boundary:** separate UI event handlers from job creation, status, cancellation, and result retrieval. Keep the first implementation local.
+3. **Define a processing-job boundary:** separate UI event handlers from job creation, status, cancellation, and result retrieval. Keep the first implementation local. The initial extraction now lives in `pipeline.py`, with process-local job metadata and validated state transitions in `jobs.py`; the Gradio handler delegates to the pipeline. A local API and UI polling/cancellation integration remain future work.
 4. **Add low-resource profiles:** benchmark and document CPU/RAM behavior before choosing defaults.
 5. **Evaluate remote processing:** only after privacy, security, cost, and provider requirements above are approved.
 
