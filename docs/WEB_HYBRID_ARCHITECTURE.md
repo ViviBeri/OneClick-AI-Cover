@@ -2,15 +2,15 @@
 
 ## Decision
 
-OneClick AI Cover will use a **web-based interface with a local processing engine as its primary deployment**. The current Gradio application already follows this model: the interface is served by the local Python process and opens in the user's browser.
+OneClick AI Cover uses a **web-based interface with a local processing engine as its primary deployment**. The current Gradio application is served by the local Python process and opens in the user's browser.
 
-A remote processing service may be added later as an optional provider. It is not part of the current product and must not become a mandatory dependency.
+Supabase is the optional cloud account and metadata layer for a future browser/PWA client. It does not replace local Demucs/RVC inference and is not required for local mode.
 
 ## Why this direction
 
-A browser interface is easier to update, works across desktop operating systems, and avoids maintaining separate native user interfaces. Keeping the inference engine local preserves the project's no-required-cloud-compute goal and avoids automatically uploading songs, recordings, datasets, and voice models.
+A browser interface is easier to update, works across desktop operating systems, and avoids maintaining separate native user interfaces. Keeping inference local avoids automatically uploading songs, recordings, datasets, and voice models.
 
-A browser interface does **not** reduce the CPU, RAM, or GPU needed for local Demucs and RVC inference. Moving inference to a remote server can help low-end computers, but it introduces GPU hosting costs, upload bandwidth, storage, privacy, consent, abuse-prevention, and operational requirements.
+Supabase can provide user authentication, Postgres metadata, and Realtime updates for multi-device history and status synchronization. These cloud features are opt-in. They do not provide GPU inference or make local inference available when the PC is offline.
 
 ## Current architecture
 
@@ -22,7 +22,10 @@ User's browser
 Local Gradio interface (app.py)
       |
       v
-Local Python processing pipeline
+Authenticated local job API
+      |
+      v
+Local job runner and processing pipeline
       |
       +--> Demucs vocal separation
       +--> RVC voice conversion
@@ -30,9 +33,27 @@ Local Python processing pipeline
       |
       v
 Local output files
+
+Future signed-in browser/PWA
+      |
+      +--> Supabase Auth
+      +--> Postgres: profile, project labels, job metadata
+      +--> Realtime: authorized metadata updates
 ```
 
-The app should continue binding to `127.0.0.1` by default. Do not expose the development server to a LAN or the public internet without authentication, request limits, upload validation, CSRF/origin protections, safe file handling, and a documented threat model.
+The local app should continue binding to `127.0.0.1` by default. Do not expose the local API to a LAN or public internet without a separately reviewed device-pairing and network-security design.
+
+## Supabase data boundary
+
+The initial schema is in `supabase/migrations/` and is documented in [Supabase integration](SUPABASE_INTEGRATION.md).
+
+- Auth identifies a user for cloud metadata.
+- Postgres stores profiles, project labels, and job metadata.
+- Realtime can synchronize authorized job metadata.
+- Storage is not enabled by the initial integration.
+- Audio, stems, datasets, model checkpoints, and local filesystem paths remain local.
+
+All exposed tables must have Row Level Security and least-privilege grants. A publishable key may be used by a client only with RLS correctly configured. Secret/service-role keys must remain server-side.
 
 ## Product modes
 
@@ -43,13 +64,22 @@ The app should continue binding to `127.0.0.1` by default. Do not expose the dev
 - Processing uses CPU by default; CUDA is an explicit option when supported.
 - Offline operation is expected only after dependencies, model weights, and required inference assets have been downloaded.
 - No paid API key, cloud GPU, or account is required for the local pipeline.
+- Supabase is optional and can be disconnected without disabling local generation.
 
-### 2. Remote mode — optional future capability
+### 2. Cloud account mode — optional
+
+- Users may sign in to synchronize project labels and job metadata.
+- Job execution remains on the paired local PC.
+- Realtime may update status/history across signed-in clients.
+- A cloud job record does not imply that a PC is online or authorize remote control.
+- Audio and voice-model uploads are not part of this mode.
+
+### 3. Remote processing — optional future capability
 
 A future hosted service may run inference for users whose computers cannot handle local processing. It must be an explicitly selected provider, not a silent fallback.
 
 Before implementation, define:
-- A user-visible upload and retention policy for songs, stems, voice recordings, and generated files.
+- A user-visible upload and retention policy for songs, stems, voice recordings, datasets, and generated files.
 - Explicit consent and rights confirmation for every uploaded audio/model asset.
 - Authentication, per-user isolation, quotas, rate limits, abuse reporting, and job cancellation.
 - GPU capacity planning, queueing, cost limits, and a sustainable free/paid model.
@@ -72,25 +102,28 @@ The local mode should degrade gracefully rather than promise that every machine 
 
 ## Implementation sequence
 
-1. **Stabilize the current engine:** retain regression tests for Demucs, RVC adapter contracts, mixing, cleanup, and output validation.
-2. **Improve the web UI:** responsive layout, clear processing stages, accessible controls, and useful error/progress states while retaining the local backend.
-3. **Define a processing-job boundary:** separate UI event handlers from job creation, status, cancellation, and result retrieval. Keep the first implementation local. The initial extraction now lives in `pipeline.py`, with process-local job metadata and validated state transitions in `jobs.py`; the Gradio handler delegates to the pipeline. A local API and UI polling/cancellation integration remain future work.
-4. **Add low-resource profiles:** benchmark and document CPU/RAM behavior before choosing defaults.
-5. **Evaluate remote processing:** only after privacy, security, cost, and provider requirements above are approved.
+1. Stabilize the current engine and its regression tests.
+2. Improve the responsive browser UI while retaining the local backend.
+3. Keep the processing-job boundary and local API independent of UI event handlers.
+4. Add the Supabase metadata schema and RLS foundation.
+5. Build the browser/PWA authentication and metadata-sync client.
+6. Add secure PC pairing for remote control without exposing the local API.
+7. Evaluate optional remote processing only after privacy, security, cost, and provider requirements are approved.
 
 ## Non-goals
 
 - Replacing the current working pipeline with a cloud-only product.
 - Uploading audio or voice models without an explicit user action.
-- Exposing the local Gradio development server publicly.
+- Exposing the local API or Gradio development server publicly.
 - Claiming that a browser UI makes local inference faster.
 - Promising free unlimited cloud GPU processing.
 
 ## Acceptance criteria
 
 The architecture is considered implemented when:
-- The local browser interface remains the default and works without a cloud account.
-- The backend can run independently of UI event handlers through a tested job interface.
-- The UI can display queued/running/completed/failed/cancelled states and retrieve local outputs.
-- Local audio and model files are not transmitted to a remote service in local mode.
+- Local mode works without a Supabase account.
+- The backend can run independently through a tested job interface.
+- The UI can display job states and retrieve local outputs.
+- Local audio and model files are not transmitted in local mode.
+- Supabase metadata is isolated by RLS and can be disabled independently.
 - Any future remote provider is opt-in and meets the security, privacy, consent, and cost requirements above.
