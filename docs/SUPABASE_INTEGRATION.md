@@ -25,6 +25,22 @@ All three tables have Row Level Security enabled. Policies scope rows to `auth.u
 
 Job history stores the local job identifier, state, progress, message, and optional output filename only. It must never store an absolute local path, source audio, vocal stems, model checkpoint bytes, or authentication tokens.
 
+## Web client
+
+The first browser client lives in `web/` and provides email/password sign-in, project management, job-history viewing, and Realtime refreshes. It is a metadata dashboard only; it does not yet control the local processing engine.
+
+Run it locally:
+
+```bash
+cd web
+npm install
+cp .env.example .env.local
+# Set VITE_SUPABASE_URL and VITE_SUPABASE_PUBLISHABLE_KEY in .env.local
+npm run dev
+```
+
+Apply the database migration before signing in. The client uses the publishable key and the signed-in user session; Row Level Security remains the authorization boundary. Do not deploy the browser client with a secret/service-role key.
+
 ## Setup
 
 1. Create a Supabase project in the Supabase dashboard.
