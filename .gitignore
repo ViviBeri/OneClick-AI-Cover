@@ -25,3 +25,8 @@ datasets/
 
 e2e-artifacts/
 models/unverified/
+
+# Web client build artifacts
+web/node_modules/
+web/dist/
+web/.env.local
