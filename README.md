@@ -24,6 +24,10 @@ If this project is useful to you, consider [sponsoring my open-source work](http
 
 ## What it does
 
+## Optional Supabase cloud account
+
+Supabase is planned as an optional account and metadata layer for profiles, project labels, and processing history. It does not run Demucs/RVC inference. Local generation remains available without an account, and audio, stems, datasets, voice checkpoints, and local filesystem paths are not uploaded by this integration. The initial database schema and Row Level Security policies are documented in [Supabase integration](docs/SUPABASE_INTEGRATION.md). No Supabase credentials are required for local mode.
+
 OneClick-AI-Cover is designed to take an audio track through a local workflow:
 
 <p align="center">
