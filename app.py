@@ -1,7 +1,11 @@
 from __future__ import annotations
-import logging, sys, tempfile, shutil
+import logging, sys, tempfile, shutil, webbrowser
 from pathlib import Path
+from threading import Timer
+
 import gradio as gr
+import uvicorn
+from fastapi import FastAPI
 sys.path.insert(0, str(Path(__file__).resolve().parent / "src"))
 from oneclick_cover import audio_utils
 from oneclick_cover.audio_utils import match_sample_rate, mix_audio, probe_audio, transcode_to_wav
@@ -15,6 +19,7 @@ from oneclick_cover.dataset import prepare_recordings
 from oneclick_cover.settings import ROOT
 from oneclick_cover.system_check import collect_system_info, format_system_report
 from oneclick_cover.api_server import LocalApiServer
+from oneclick_cover.browser_broker import BrowserSessionStore, create_browser_broker_app
 from oneclick_cover.rvc_indices import import_rvc_index, list_rvc_indices
 UNVERIFIED_MODEL_DIR = ROOT / "models" / "unverified"
 _active_job_store = None
@@ -503,17 +508,37 @@ Search public model-card metadata without an account or API token. Search result
         with gr.Tab("System"):
             gr.Markdown(f"- Python: `{sys.version.split()[0]}`\n- Voice models folder: `{VOICE_DIR}`\n- Dataset folder: `{ROOT / 'datasets'}`\n- Output folder: `{OUTPUT_DIR}`\n- Log file: `{LOG_DIR / 'oneclick-cover.log'}`")
 def launch_application(api_server_factory=LocalApiServer):
-    """Run Gradio with the authenticated loopback API in the same lifecycle."""
+    """Run Gradio and the browser broker on one loopback origin."""
     api_server = api_server_factory()
     global _active_job_store
     try:
         api_server.start()
         runner = getattr(api_server, "runner", None)
-        _active_job_store = getattr(runner, "store", None)
-        demo.launch(
-            server_name="127.0.0.1",
-            server_port=7860,
-            inbrowser=True,
+        if runner is None:
+            raise RuntimeError("The local API server did not provide a job runner.")
+        _active_job_store = runner.store
+
+        host = "127.0.0.1"
+        port = 7860
+        origin = f"http://{host}:{port}"
+        sessions = BrowserSessionStore()
+        parent_app = FastAPI(docs_url=None, redoc_url=None, openapi_url=None)
+        create_browser_broker_app(
+            runner,
+            session_store=sessions,
+            upload_dir=api_server.upload_dir,
+            voice_dir=api_server.voice_dir,
+            output_dir=api_server.output_dir,
+            expected_host=f"{host}:{port}",
+            expected_origin=origin,
+            app=parent_app,
+        )
+        application = gr.mount_gradio_app(
+            parent_app,
+            demo,
+            path="/",
+            server_name=host,
+            server_port=port,
             show_error=True,
             theme=gr.themes.Soft(
                 primary_hue="violet",
@@ -521,7 +546,13 @@ def launch_application(api_server_factory=LocalApiServer):
                 neutral_hue="slate",
             ),
             css=APP_CSS,
+            footer_links=[],
         )
+
+        browser_timer = Timer(1.0, webbrowser.open, args=(origin,))
+        browser_timer.daemon = True
+        browser_timer.start()
+        uvicorn.run(application, host=host, port=port, log_level="info")
     finally:
         _active_job_store = None
         api_server.stop()
