@@ -21,7 +21,7 @@ def test_rejects_missing_wrong_type_and_empty_index(tmp_path):
 
     wrong_type = tmp_path / "voice.bin"
     wrong_type.write_bytes(b"data")
-    with pytest.raises(ValueError, match="\.index extension"):
+    with pytest.raises(ValueError, match=r"\.index extension"):
         import_rvc_index(wrong_type, tmp_path / "indices")
 
     empty = tmp_path / "empty.index"
