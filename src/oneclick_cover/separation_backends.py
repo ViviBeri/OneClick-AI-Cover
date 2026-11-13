@@ -2,11 +2,13 @@
 
 from __future__ import annotations
 
+import subprocess
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Callable, Protocol
 
 from oneclick_cover.separation import separate_vocals
+from oneclick_cover.audio_separator_backend import AudioSeparatorBackend
 
 ProgressCallback = Callable[[float, str], None]
 
@@ -55,7 +57,10 @@ class DemucsBackend:
         )
 
 
-_BACKENDS: dict[str, SeparationBackend] = {"demucs": DemucsBackend()}
+_BACKENDS: dict[str, SeparationBackend] = {
+    "demucs": DemucsBackend(),
+    "audio-separator": AudioSeparatorBackend(),
+}
 
 
 def get_separation_backend(name: str) -> SeparationBackend:
@@ -69,6 +74,5 @@ def get_separation_backend(name: str) -> SeparationBackend:
         available = ", ".join(sorted(_BACKENDS))
         raise ValueError(
             f"Unsupported separation backend '{normalized}'. "
-            f"Available backends: {available}. Optional MDX/Roformer support "
-            "has not been installed in this build."
+            f"Available backends: {available}."
         ) from exc
