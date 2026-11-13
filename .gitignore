@@ -25,3 +25,7 @@ datasets/
 
 e2e-artifacts/
 models/unverified/
+
+# Local application state
+/data/*
+!/data/.gitkeep
