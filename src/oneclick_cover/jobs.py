@@ -215,13 +215,14 @@ class LocalJobStore:
 
     @staticmethod
     def _from_row(row: sqlite3.Row) -> ProcessingJob:
+        record = dict(row)
         return ProcessingJob(
-            id=row["id"],
-            status=JobStatus(row["status"]),
-            progress=float(row["progress"]),
-            message=row["message"],
-            created_at=datetime.fromisoformat(row["created_at"]),
-            updated_at=datetime.fromisoformat(row["updated_at"]),
-            output_path=Path(row["output_path"]) if row["output_path"] else None,
-            error=row["error"],
+            id=record["id"],
+            status=JobStatus(record["status"]),
+            progress=float(record["progress"]),
+            message=record["message"],
+            created_at=datetime.fromisoformat(record["created_at"]),
+            updated_at=datetime.fromisoformat(record["updated_at"]),
+            output_path=Path(record["output_path"]) if record["output_path"] else None,
+            error=record["error"],
         )
