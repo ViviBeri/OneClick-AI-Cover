@@ -109,6 +109,7 @@ def generate(song, model, pitch, vocal_gain, instrumental_gain, fmt, demucs_devi
             separation_backend=separation_backend,
             progress=lambda fraction, message: progress(fraction, desc=message),
             transcode_fn=transcode_to_wav,
+            separate_fn=separate_vocals if separation_backend == "demucs" else None,
             convert_fn=convert_voice,
             export_mp3_fn=audio_utils.export_mp3,
             validate_audio_fn=validate_audio_file,
