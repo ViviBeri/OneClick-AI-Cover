@@ -106,9 +106,9 @@ def generate(song, model, pitch, vocal_gain, instrumental_gain, fmt, demucs_devi
             demucs_device=demucs_device,
             demucs_segment=demucs_segment,
             demucs_timeout=demucs_timeout,
+            separation_backend=separation_backend,
             progress=lambda fraction, message: progress(fraction, desc=message),
             transcode_fn=transcode_to_wav,
-            separate_fn=separate_vocals,
             convert_fn=convert_voice,
             export_mp3_fn=audio_utils.export_mp3,
             validate_audio_fn=validate_audio_file,
@@ -326,7 +326,8 @@ with gr.Blocks(title="OneClick AI Cover — Studio", elem_id="oneclick-studio") 
             pitch=gr.Slider(-12,12,value=0,step=1,label="Pitch shift")
             vocal_gain=gr.Slider(0.2,2,value=1,step=0.05,label="Vocal gain")
             instrumental_gain=gr.Slider(0.2,2,value=0.85,step=0.05,label="Instrumental gain")
-            fmt=gr.Radio(["WAV","MP3"],value="WAV",label="Export format")\n            separation_backend=gr.Dropdown(choices=["demucs","audio-separator"],value="demucs",label="Vocal separation engine",info="Audio Separator requires a separately installed runtime and an explicitly downloaded local model. Configure the two ONECLICK_AUDIO_SEPARATOR environment variables first.")
+            fmt=gr.Radio(["WAV","MP3"],value="WAV",label="Export format")
+            separation_backend=gr.Dropdown(choices=["demucs","audio-separator"],value="demucs",label="Vocal separation engine",info="Audio Separator requires a separately installed runtime and an explicitly downloaded local model. Configure the two ONECLICK_AUDIO_SEPARATOR environment variables first.")
             with gr.Accordion("Demucs performance settings", open=False):
                 demucs_device=gr.Dropdown(["cpu","auto","cuda"],value="cpu",label="Processing device",info="CPU is the safest default for low-memory PCs. CUDA requires a compatible NVIDIA GPU.")
                 demucs_segment=gr.Slider(2,7,value=5,step=1,label="Segment size (seconds)",info="Smaller segments reduce peak memory use but may run slower.")
