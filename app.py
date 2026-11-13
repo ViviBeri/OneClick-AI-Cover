@@ -1,4 +1,5 @@
 from __future__ import annotations
+import os
 import logging, sys, tempfile, shutil, webbrowser
 from pathlib import Path
 from threading import Timer
