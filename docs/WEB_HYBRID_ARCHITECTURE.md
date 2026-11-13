@@ -35,7 +35,7 @@ Local job runner and processing pipeline
 Local files: uploads, models, datasets, outputs
 ```
 
-The local app must bind to `127.0.0.1` by default. Do not expose the local API or Gradio server to a LAN or public internet without a separately reviewed device-pairing and network-security design.
+The local app must bind to `127.0.0.1` by default. The API currently accepts only loopback Host headers, rejects requests carrying a browser `Origin` header, and requires its per-launch bearer token. This deliberately keeps it unavailable to a separate browser client until a same-origin credential broker is implemented and reviewed. Do not expose the local API or Gradio server to a LAN or public internet without a separately reviewed device-pairing and network-security design.
 
 ## Product modes
 
