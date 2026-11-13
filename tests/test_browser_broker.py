@@ -157,7 +157,7 @@ def test_broker_lists_jobs_and_requires_csrf_for_logout(broker_fixture):
     assert response.status_code == 200
     assert response.json()[0]["id"] == job.id
 
-    assert client.delete("/api/browser/session").status_code == 401
+    assert client.delete("/api/browser/session").status_code == 403\n    assert client.delete(\n        "/api/browser/session", headers={"Origin": "http://127.0.0.1:7860"}\n    ).status_code == 401
     response = client.delete(
         "/api/browser/session",
         headers={"Origin": "http://127.0.0.1:7860", "X-CSRF-Token": csrf},
