@@ -26,8 +26,8 @@ The external runtime must be installed and validated independently.
    - `ONECLICK_AUDIO_SEPARATOR_MODEL_PATH`: absolute path to the downloaded
      model file.
 
-5. Select `audio-separator` as the pipeline backend in a future UI
-   configuration. The current Gradio form still exposes Demucs only.
+5. Select `audio-separator` from the Vocal separation engine dropdown in
+   Generate Cover. Demucs remains the default.
 
 The adapter refuses to run if the runtime or model file is missing. It does
 not download models, access a remote API, or expose the local service to the
