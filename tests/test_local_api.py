@@ -29,7 +29,7 @@ def api_fixture(tmp_path):
         output_dir=outputs,
     )
     try:
-        yield TestClient(app), runner, outputs
+        yield TestClient(app, base_url="http://127.0.0.1"), runner, outputs
     finally:
         runner.shutdown()
 
@@ -97,3 +97,24 @@ def test_api_does_not_expose_result_for_incomplete_job(api_fixture):
     job = runner.store.create()
     response = client.get(f"/jobs/{job.id}/result", headers=auth())
     assert response.status_code == 409
+
+
+
+def test_api_rejects_browser_origin_requests(api_fixture):
+    client, _, _ = api_fixture
+    response = client.get(
+        "/health",
+        headers={**auth(), "Origin": "https://attacker.example"},
+    )
+    assert response.status_code == 403
+    assert response.json()["detail"] == "Browser access is not enabled for the local API."
+
+
+def test_api_rejects_non_loopback_host_headers(api_fixture):
+    client, _, _ = api_fixture
+    response = client.get(
+        "/health",
+        headers={**auth(), "Host": "attacker.example"},
+    )
+    assert response.status_code == 403
+    assert response.json()["detail"] == "The local API only accepts loopback hosts."
