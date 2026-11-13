@@ -132,7 +132,7 @@ def main() -> int:
                     + "; page state: "
                     + repr(
                         page.evaluate(
-                            "() => ({readyState: document.readyState, title: document.title, scripts: [...document.scripts].map((script) => ({src: script.src, type: script.type, loaded: script.dataset.loaded || null})), configElements: [...document.querySelectorAll('[id*=config], [data-]')].slice(0, 20).map((element) => ({tag: element.tagName, id: element.id, data: {...element.dataset}})), html: document.documentElement.outerHTML.slice(0, 5000)})"
+                            "() => ({readyState: document.readyState, title: document.title, gradioConfig: {present: Boolean(window.gradio_config), version: window.gradio_config?.version, apiPrefix: window.gradio_config?.api_prefix, mode: window.gradio_config?.mode}, customElement: {registered: Boolean(customElements.get('gradio-app')), instances: [...document.querySelectorAll('gradio-app')].map((element) => ({html: element.outerHTML.slice(0, 2000), shadow: element.shadowRoot?.innerHTML.slice(0, 2000) || null}))}, scripts: [...document.scripts].map((script) => ({src: script.src, type: script.type, text: script.src ? null : script.textContent.slice(0, 500)})), resources: performance.getEntriesByType('resource').filter((entry) => /\\.js($|\\?)/.test(entry.name)).map((entry) => ({name: entry.name, duration: entry.duration, transferSize: entry.transferSize})), body: document.body.innerHTML.slice(0, 5000), html: document.documentElement.outerHTML.slice(0, 2000)})"
                         )
                     )
                 ) from exc
