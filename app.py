@@ -5,7 +5,7 @@ import gradio as gr
 sys.path.insert(0, str(Path(__file__).resolve().parent / "src"))
 from oneclick_cover import audio_utils
 from oneclick_cover.audio_utils import match_sample_rate, mix_audio, probe_audio, transcode_to_wav
-from oneclick_cover.settings import VOICE_DIR, OUTPUT_DIR, LOG_DIR
+from oneclick_cover.settings import VOICE_DIR, INDEX_DIR, OUTPUT_DIR, LOG_DIR
 from oneclick_cover.validation import validate_audio_file, validate_voice_model
 from oneclick_cover.separation import separate_vocals
 from oneclick_cover.conversion import convert_voice
@@ -15,13 +15,29 @@ from oneclick_cover.dataset import prepare_recordings
 from oneclick_cover.settings import ROOT
 from oneclick_cover.system_check import collect_system_info, format_system_report
 from oneclick_cover.api_server import LocalApiServer
+from oneclick_cover.rvc_indices import import_rvc_index, list_rvc_indices
 UNVERIFIED_MODEL_DIR = ROOT / "models" / "unverified"
-for folder in (VOICE_DIR, OUTPUT_DIR, LOG_DIR, UNVERIFIED_MODEL_DIR): folder.mkdir(parents=True, exist_ok=True)
+for folder in (VOICE_DIR, INDEX_DIR, OUTPUT_DIR, LOG_DIR, UNVERIFIED_MODEL_DIR): folder.mkdir(parents=True, exist_ok=True)
 logging.basicConfig(filename=LOG_DIR / "oneclick-cover.log", level=logging.INFO)
 def models(): return sorted(p.name for p in VOICE_DIR.glob("*.pth") if p.is_file())
 def refresh_models():
     choices = models()
     return gr.Dropdown(choices=choices, value=(choices[0] if choices else None))
+
+def refresh_indices():
+    choices = list_rvc_indices()
+    return gr.Dropdown(choices=choices, value=(choices[0] if choices else None))
+
+def import_voice_index(uploaded_file):
+    if not uploaded_file:
+        raise gr.Error("Choose an RVC .index file first.")
+    try:
+        destination = import_rvc_index(Path(uploaded_file))
+        choices = list_rvc_indices()
+        return gr.Dropdown(choices=choices, value=destination.name), f"Imported {destination.name}. Select it in Generate Cover when using a compatible voice model."
+    except Exception as exc:
+        logging.exception("RVC index import failed")
+        raise gr.Error(str(exc)) from exc
 def import_voice_model(uploaded_file, trust_confirmed=False):
     if not trust_confirmed:
         raise gr.Error("Trust acknowledgement required. RVC may deserialize .pth pickle payloads and execute code; this checkbox does not sandbox the checkpoint.")
@@ -83,7 +99,7 @@ def prepare_training_dataset(uploaded_files, dataset_name, progress=gr.Progress(
         logging.exception("Dataset preparation failed")
         raise gr.Error(str(exc)) from exc
 
-def generate(song, model, pitch, vocal_gain, instrumental_gain, fmt, demucs_device="cpu", demucs_segment=5.0, demucs_timeout=1800, separation_backend="demucs", trust_confirmed=False, progress=gr.Progress()):
+def generate(song, model, pitch, vocal_gain, instrumental_gain, fmt, demucs_device="cpu", demucs_segment=5.0, demucs_timeout=1800, separation_backend="demucs", index_name=None, index_rate=0.75, trust_confirmed=False, progress=gr.Progress()):
     if not song: raise gr.Error("Choose an input song first.")
     if not model: raise gr.Error("Add an authorized .pth model to models/voices, then refresh.")
     if not trust_confirmed:
@@ -93,6 +109,16 @@ def generate(song, model, pitch, vocal_gain, instrumental_gain, fmt, demucs_devi
     model_path = (VOICE_DIR / model).resolve()
     if model_path.parent != VOICE_DIR.resolve():
         raise gr.Error("Invalid voice-model selection.")
+
+    index_path = None
+    if index_name:
+        index_path = (INDEX_DIR / index_name).resolve()
+        if index_path.parent != INDEX_DIR.resolve() or not index_path.is_file():
+            raise gr.Error("Invalid or missing RVC index selection.")
+        if index_path.suffix.lower() != ".index":
+            raise gr.Error("Selected retrieval file must use the .index extension.")
+    elif float(index_rate) > 0:
+        index_rate = 0.0
 
     try:
         output = run_cover_pipeline(
@@ -110,7 +136,7 @@ def generate(song, model, pitch, vocal_gain, instrumental_gain, fmt, demucs_devi
             progress=lambda fraction, message: progress(fraction, desc=message),
             transcode_fn=transcode_to_wav,
             separate_fn=separate_vocals if separation_backend == "demucs" else None,
-            convert_fn=convert_voice,
+            convert_fn=lambda source_vocal, destination, voice_model, pitch_shift: convert_voice(source_vocal, destination, voice_model, pitch_shift, index_path=index_path, index_rate=float(index_rate)),
             export_mp3_fn=audio_utils.export_mp3,
             validate_audio_fn=validate_audio_file,
             validate_model_fn=validate_voice_model,
@@ -328,6 +354,10 @@ with gr.Blocks(title="OneClick AI Cover — Studio", elem_id="oneclick-studio") 
             vocal_gain=gr.Slider(0.2,2,value=1,step=0.05,label="Vocal gain")
             instrumental_gain=gr.Slider(0.2,2,value=0.85,step=0.05,label="Instrumental gain")
             fmt=gr.Radio(["WAV","MP3"],value="WAV",label="Export format")
+            with gr.Accordion("RVC retrieval index (optional)", open=False):
+                index_name=gr.Dropdown(label="Matching .index file",choices=list_rvc_indices(),value=None,allow_custom_value=False,info="Use an index created for this exact voice model. Leave empty to disable retrieval.")
+                gr.Button("Refresh index files").click(refresh_indices,inputs=[],outputs=index_name)
+                index_rate=gr.Slider(0,1,value=0.75,step=0.05,label="Index strength",info="Higher values use more retrieval features. Start around 0.5–0.75 and compare by listening. Ignored when no index is selected.")
             separation_backend=gr.Dropdown(choices=["demucs","audio-separator"],value="demucs",label="Vocal separation engine",info="Audio Separator requires a separately installed runtime and an explicitly downloaded local model. Configure the two ONECLICK_AUDIO_SEPARATOR environment variables first.")
             with gr.Accordion("Demucs performance settings", open=False):
                 demucs_device=gr.Dropdown(["cpu","auto","cuda"],value="cpu",label="Processing device",info="CPU is the safest default for low-memory PCs. CUDA requires a compatible NVIDIA GPU.")
@@ -336,7 +366,7 @@ with gr.Blocks(title="OneClick AI Cover — Studio", elem_id="oneclick-studio") 
             go=gr.Button("Generate cover",variant="primary")
             audio=gr.Audio(type="filepath",label="Finished cover")
             status=gr.Textbox(label="Status")
-            go.click(generate,inputs=[song,model,pitch,vocal_gain,instrumental_gain,fmt,demucs_device,demucs_segment,demucs_timeout,separation_backend,trust_generate],outputs=[audio,status])
+            go.click(generate,inputs=[song,model,pitch,vocal_gain,instrumental_gain,fmt,demucs_device,demucs_segment,demucs_timeout,separation_backend,index_name,index_rate,trust_generate],outputs=[audio,status])
         with gr.Tab("Prepare Voice Recordings"):
             gr.Markdown("""## Prepare your own voice recordings
 Upload recordings of your own voice, or recordings you have explicit permission to use. The app converts each file to mono WAV and stores it in a local dataset folder. Recordings are not uploaded to a cloud service by this step.
@@ -406,6 +436,12 @@ Search public model-card metadata without an account or API token. Search result
             import_button=gr.Button("Import model",variant="primary")
             import_status=gr.Textbox(label="Import status",interactive=False)
             import_button.click(fn=import_voice_model,inputs=[model_upload,import_trust],outputs=[model,import_status])
+        with gr.Tab("Import RVC Index"):
+            gr.Markdown("## Import a retrieval index\nUpload the .index file generated for a compatible RVC voice model. Index files are stored locally in models/indices/; they are not uploaded. An index from another voice model can reduce quality or cause errors, so verify the source and model match before use.")
+            index_upload=gr.File(label="RVC retrieval index (.index)",file_types=[".index"],type="filepath")
+            import_index_button=gr.Button("Import index",variant="primary")
+            index_status=gr.Textbox(label="Index import status",interactive=False)
+            import_index_button.click(fn=import_voice_index,inputs=[index_upload],outputs=[index_name,index_status])
         with gr.Tab("System"):
             gr.Markdown(f"- Python: `{sys.version.split()[0]}`\n- Voice models folder: `{VOICE_DIR}`\n- Dataset folder: `{ROOT / 'datasets'}`\n- Output folder: `{OUTPUT_DIR}`\n- Log file: `{LOG_DIR / 'oneclick-cover.log'}`")
 def launch_application(api_server_factory=LocalApiServer):
