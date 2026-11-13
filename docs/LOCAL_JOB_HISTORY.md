@@ -22,4 +22,4 @@ The database lives at `data/jobs.sqlite3` under the application directory. The `
 
 ## Scope
 
-SQLite currently provides durable storage for the existing local job API. It does not add a job-history screen to the Gradio interface, multi-user access, automatic cleanup, or durable recovery of intermediate processing files.
+The Gradio Job History tab displays the latest 100 cover generations with status, progress, timestamps, output filenames, and errors. It does not add multi-user access, automatic cleanup, or durable recovery of intermediate processing files.

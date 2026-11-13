@@ -61,7 +61,8 @@ See the [local job history guide](docs/LOCAL_JOB_HISTORY.md) for SQLite persiste
 ### Highlights
 
 - **Local-first processing:** the app runs on your machine; it does not automatically upload your song or recordings to a cloud service.
-- **Persistent job metadata:** the local API stores job status and history in SQLite at `data/jobs.sqlite3`; interrupted jobs are marked failed on restart rather than silently resumed.
+- **Persistent job history:** cover generations started in the Gradio studio are recorded in SQLite at `data/jobs.sqlite3`. The Job History tab shows the latest 100 jobs, including status, progress, timestamp, output filename, and failure details. Interrupted jobs are marked failed on restart rather than silently resumed.
+- **Local job API:** the authenticated loopback API exposes job creation, status, queued cancellation, and result retrieval for trusted local integrations. A separate browser client is not connected yet.
 - **Audio input:** MP3, WAV and FLAC are supported by the input flow.
 - **Vocal separation:** Demucs is used to create vocal and instrumental tracks.
 - **Voice conversion:** a command-line adapter invokes a compatible RVC inference backend and model.
@@ -187,8 +188,8 @@ This remains an advanced, partly manual workflow. The [voice-training guide](doc
 - [ ] Verify installer on a clean Windows machine
 - [ ] Verify full conversion with authorized audio and a compatible model
 - [ ] Benchmark memory, CPU and GPU performance and define low-resource profiles
-- [x] Extract the local processing pipeline from Gradio handlers and add a tested process-local job state store
-- [ ] Add a local job API and connect the UI to job status, cancellation, and result retrieval
+- [x] Persist cover-generation jobs in local SQLite and display recent jobs in the Gradio history tab ([PR #52](https://github.com/ViviBeri/OneClick-AI-Cover/pull/52))
+- [ ] Connect a separate browser client to the authenticated local job API for asynchronous status, cancellation, and result retrieval
 - [ ] Redesign the responsive browser UI while retaining local processing
 - [ ] Evaluate optional remote inference only after privacy, security, consent, and cost requirements are met
 - [ ] Complete and verify remote training/checkpoint export workflow

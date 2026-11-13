@@ -17,6 +17,7 @@ from oneclick_cover.system_check import collect_system_info, format_system_repor
 from oneclick_cover.api_server import LocalApiServer
 from oneclick_cover.rvc_indices import import_rvc_index, list_rvc_indices
 UNVERIFIED_MODEL_DIR = ROOT / "models" / "unverified"
+_active_job_store = None
 for folder in (VOICE_DIR, INDEX_DIR, OUTPUT_DIR, LOG_DIR, UNVERIFIED_MODEL_DIR): folder.mkdir(parents=True, exist_ok=True)
 logging.basicConfig(filename=LOG_DIR / "oneclick-cover.log", level=logging.INFO)
 def models(): return sorted(p.name for p in VOICE_DIR.glob("*.pth") if p.is_file())
@@ -89,6 +90,28 @@ def download_hf_model(repo_id, filename, confirmed):
 def run_system_check():
     return format_system_report(collect_system_info())
 
+
+def format_job_history(jobs):
+    """Return a compact, path-safe table for the local job history view."""
+    return [
+        [
+            job.id,
+            job.status.value,
+            f"{job.progress:.0%}",
+            job.message,
+            job.created_at.strftime("%Y-%m-%d %H:%M:%S UTC"),
+            job.output_path.name if job.output_path else "",
+            job.error or "",
+        ]
+        for job in reversed(jobs[-100:])
+    ]
+
+
+def refresh_job_history():
+    if _active_job_store is None:
+        return []
+    return format_job_history(_active_job_store.list())
+
 def prepare_training_dataset(uploaded_files, dataset_name, progress=gr.Progress()):
     try:
         progress(0.1, desc="Checking recordings")
@@ -120,6 +143,15 @@ def generate(song, model, pitch, vocal_gain, instrumental_gain, fmt, demucs_devi
     elif float(index_rate) > 0:
         index_rate = 0.0
 
+    job = _active_job_store.create() if _active_job_store is not None else None
+    if job is not None:
+        _active_job_store.mark_running(job.id, "Preparing cover")
+
+    def report_progress(fraction, message):
+        progress(fraction, desc=message)
+        if job is not None:
+            _active_job_store.update_progress(job.id, fraction, message)
+
     try:
         output = run_cover_pipeline(
             source,
@@ -133,7 +165,7 @@ def generate(song, model, pitch, vocal_gain, instrumental_gain, fmt, demucs_devi
             demucs_segment=demucs_segment,
             demucs_timeout=demucs_timeout,
             separation_backend=separation_backend,
-            progress=lambda fraction, message: progress(fraction, desc=message),
+            progress=report_progress,
             transcode_fn=transcode_to_wav,
             separate_fn=separate_vocals if separation_backend == "demucs" else None,
             convert_fn=(
@@ -148,8 +180,17 @@ def generate(song, model, pitch, vocal_gain, instrumental_gain, fmt, demucs_devi
             validate_audio_fn=validate_audio_file,
             validate_model_fn=validate_voice_model,
         )
+        if job is not None:
+            _active_job_store.complete(job.id, output)
         return str(output), "Saved: " + str(output)
     except Exception as exc:
+        if job is not None:
+            try:
+                current = _active_job_store.get(job.id)
+                if current is not None and current.status.value in {"queued", "running"}:
+                    _active_job_store.fail(job.id, str(exc) or exc.__class__.__name__)
+            except Exception:
+                logging.exception("Failed to persist cover-generation error")
         logging.exception("Cover generation failed")
         raise gr.Error(str(exc)) from exc
 
@@ -374,6 +415,16 @@ with gr.Blocks(title="OneClick AI Cover — Studio", elem_id="oneclick-studio") 
             audio=gr.Audio(type="filepath",label="Finished cover")
             status=gr.Textbox(label="Status")
             go.click(generate,inputs=[song,model,pitch,vocal_gain,instrumental_gain,fmt,demucs_device,demucs_segment,demucs_timeout,separation_backend,index_name,index_rate,trust_generate],outputs=[audio,status])
+        with gr.Tab("Job History"):
+            gr.Markdown("## Recent local cover jobs\nCompleted and failed generations are retained in the local SQLite database. The table shows the latest 100 jobs; audio files remain in the output folder.")
+            history_refresh = gr.Button("Refresh job history")
+            history_table = gr.Dataframe(
+                headers=["Job ID", "Status", "Progress", "Stage", "Created (UTC)", "Output", "Error"],
+                datatype=["str", "str", "str", "str", "str", "str", "str"],
+                interactive=False,
+                wrap=True,
+            )
+            history_refresh.click(fn=refresh_job_history, inputs=[], outputs=[history_table])
         with gr.Tab("Prepare Voice Recordings"):
             gr.Markdown("""## Prepare your own voice recordings
 Upload recordings of your own voice, or recordings you have explicit permission to use. The app converts each file to mono WAV and stores it in a local dataset folder. Recordings are not uploaded to a cloud service by this step.
@@ -454,8 +505,11 @@ Search public model-card metadata without an account or API token. Search result
 def launch_application(api_server_factory=LocalApiServer):
     """Run Gradio with the authenticated loopback API in the same lifecycle."""
     api_server = api_server_factory()
+    global _active_job_store
     try:
         api_server.start()
+        runner = getattr(api_server, "runner", None)
+        _active_job_store = getattr(runner, "store", None)
         demo.launch(
             server_name="127.0.0.1",
             server_port=7860,
@@ -469,6 +523,7 @@ def launch_application(api_server_factory=LocalApiServer):
             css=APP_CSS,
         )
     finally:
+        _active_job_store = None
         api_server.stop()
 
 
