@@ -9,7 +9,7 @@ from typing import Callable
 
 from oneclick_cover.audio_utils import export_mp3, match_sample_rate, mix_audio, transcode_to_wav
 from oneclick_cover.conversion import convert_voice
-from oneclick_cover.separation import separate_vocals
+from oneclick_cover.separation_backends import get_separation_backend
 from oneclick_cover.validation import validate_audio_file, validate_voice_model
 
 ProgressCallback = Callable[[float, str], None]
@@ -27,9 +27,10 @@ def run_cover_pipeline(
     demucs_device: str = "cpu",
     demucs_segment: float = 5.0,
     demucs_timeout: float = 1800,
+    separation_backend: str = "demucs",
     progress: ProgressCallback | None = None,
     transcode_fn=transcode_to_wav,
-    separate_fn=separate_vocals,
+    separate_fn=None,
     convert_fn=convert_voice,
     match_sample_rate_fn=match_sample_rate,
     mix_fn=mix_audio,
@@ -56,12 +57,14 @@ def run_cover_pipeline(
         report(0.1, "Preparing audio")
         transcode_fn(source, wav)
 
-        report(0.25, "Separating vocals")
+        report(0.25, f"Separating vocals ({separation_backend})")
 
         def separation_progress(fraction: float, message: str) -> None:
             report(0.25 + 0.35 * fraction, message or "Separating vocals")
 
-        vocals, instrumental = separate_fn(
+        backend = get_separation_backend(separation_backend)
+        separator = separate_fn or backend.separate
+        vocals, instrumental = separator(
             wav,
             job_dir,
             progress=separation_progress,
