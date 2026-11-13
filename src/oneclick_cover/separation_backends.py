@@ -56,7 +56,10 @@ class DemucsBackend:
         )
 
 
-_BACKENDS: dict[str, SeparationBackend] = {\n    "demucs": DemucsBackend(),\n    "audio-separator": AudioSeparatorBackend(),\n}
+_BACKENDS: dict[str, SeparationBackend] = {
+    "demucs": DemucsBackend(),
+    "audio-separator": AudioSeparatorBackend(),
+}
 
 
 def get_separation_backend(name: str) -> SeparationBackend:
@@ -70,6 +73,5 @@ def get_separation_backend(name: str) -> SeparationBackend:
         available = ", ".join(sorted(_BACKENDS))
         raise ValueError(
             f"Unsupported separation backend '{normalized}'. "
-            f"Available backends: {available}. Optional MDX/Roformer support "
-            "has not been installed in this build."
+            f"Available backends: {available}."
         ) from exc
