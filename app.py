@@ -83,7 +83,7 @@ def prepare_training_dataset(uploaded_files, dataset_name, progress=gr.Progress(
         logging.exception("Dataset preparation failed")
         raise gr.Error(str(exc)) from exc
 
-def generate(song, model, pitch, vocal_gain, instrumental_gain, fmt, demucs_device="cpu", demucs_segment=5.0, demucs_timeout=1800, trust_confirmed=False, progress=gr.Progress()):
+def generate(song, model, pitch, vocal_gain, instrumental_gain, fmt, demucs_device="cpu", demucs_segment=5.0, demucs_timeout=1800, separation_backend="demucs", trust_confirmed=False, progress=gr.Progress()):
     if not song: raise gr.Error("Choose an input song first.")
     if not model: raise gr.Error("Add an authorized .pth model to models/voices, then refresh.")
     if not trust_confirmed:
@@ -326,7 +326,7 @@ with gr.Blocks(title="OneClick AI Cover — Studio", elem_id="oneclick-studio") 
             pitch=gr.Slider(-12,12,value=0,step=1,label="Pitch shift")
             vocal_gain=gr.Slider(0.2,2,value=1,step=0.05,label="Vocal gain")
             instrumental_gain=gr.Slider(0.2,2,value=0.85,step=0.05,label="Instrumental gain")
-            fmt=gr.Radio(["WAV","MP3"],value="WAV",label="Export format")
+            fmt=gr.Radio(["WAV","MP3"],value="WAV",label="Export format")\n            separation_backend=gr.Dropdown(choices=["demucs","audio-separator"],value="demucs",label="Vocal separation engine",info="Audio Separator requires a separately installed runtime and an explicitly downloaded local model. Configure the two ONECLICK_AUDIO_SEPARATOR environment variables first.")
             with gr.Accordion("Demucs performance settings", open=False):
                 demucs_device=gr.Dropdown(["cpu","auto","cuda"],value="cpu",label="Processing device",info="CPU is the safest default for low-memory PCs. CUDA requires a compatible NVIDIA GPU.")
                 demucs_segment=gr.Slider(2,7,value=5,step=1,label="Segment size (seconds)",info="Smaller segments reduce peak memory use but may run slower.")
@@ -334,7 +334,7 @@ with gr.Blocks(title="OneClick AI Cover — Studio", elem_id="oneclick-studio") 
             go=gr.Button("Generate cover",variant="primary")
             audio=gr.Audio(type="filepath",label="Finished cover")
             status=gr.Textbox(label="Status")
-            go.click(generate,inputs=[song,model,pitch,vocal_gain,instrumental_gain,fmt,demucs_device,demucs_segment,demucs_timeout,trust_generate],outputs=[audio,status])
+            go.click(generate,inputs=[song,model,pitch,vocal_gain,instrumental_gain,fmt,demucs_device,demucs_segment,demucs_timeout,separation_backend,trust_generate],outputs=[audio,status])
         with gr.Tab("Prepare Voice Recordings"):
             gr.Markdown("""## Prepare your own voice recordings
 Upload recordings of your own voice, or recordings you have explicit permission to use. The app converts each file to mono WAV and stores it in a local dataset folder. Recordings are not uploaded to a cloud service by this step.
