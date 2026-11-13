@@ -6,8 +6,8 @@ import hmac
 from pathlib import Path
 from typing import Literal
 
-from fastapi import Depends, FastAPI, Header, HTTPException
-from fastapi.responses import FileResponse
+from fastapi import Depends, FastAPI, Header, HTTPException, Request
+from fastapi.responses import FileResponse, JSONResponse
 from pydantic import BaseModel, Field
 
 from oneclick_cover.pipeline import run_cover_pipeline
@@ -63,6 +63,26 @@ def create_local_api(
         redoc_url=None,
         openapi_url=None,
     )
+
+    @app.middleware("http")
+    async def enforce_local_request_boundary(request: Request, call_next):
+        """Reject DNS-rebinding Host headers and browser-originated requests.
+
+        The API is a native local integration boundary for now. Browser access
+        must go through a separately reviewed same-origin credential broker.
+        """
+        host = (request.url.hostname or "").lower()
+        if host not in {"127.0.0.1", "localhost", "::1"}:
+            return JSONResponse(
+                status_code=403,
+                content={"detail": "The local API only accepts loopback hosts."},
+            )
+        if request.headers.get("origin") is not None:
+            return JSONResponse(
+                status_code=403,
+                content={"detail": "Browser access is not enabled for the local API."},
+            )
+        return await call_next(request)
 
     def authenticate(authorization: str | None = Header(default=None)) -> None:
         scheme, _, supplied = (authorization or "").partition(" ")
