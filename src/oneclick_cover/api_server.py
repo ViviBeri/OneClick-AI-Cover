@@ -27,6 +27,7 @@ class LocalApiServer:
         output_dir: str | Path = OUTPUT_DIR,
         startup_timeout: float = 10.0,
         runner: LocalJobRunner | None = None,
+        job_database_path: str | Path = JOB_DB_PATH,
     ) -> None:
         if startup_timeout <= 0:
             raise ValueError("Startup timeout must be positive.")
@@ -35,7 +36,7 @@ class LocalApiServer:
         self.voice_dir = Path(voice_dir)
         self.output_dir = Path(output_dir)
         self.startup_timeout = startup_timeout
-        self.runner = runner or LocalJobRunner(store=LocalJobStore(JOB_DB_PATH))
+        self.runner = runner or LocalJobRunner(store=LocalJobStore(job_database_path))
         self._owns_runner = runner is None
         self._token: str | None = None
         self._server: uvicorn.Server | None = None
