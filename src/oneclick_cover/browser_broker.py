@@ -174,6 +174,7 @@ def create_browser_broker_app(
     expected_host: str,
     expected_origin: str,
     cookie_name: str = "oneclick_browser_session",
+    app: FastAPI | None = None,
 ) -> FastAPI:
     """Create same-origin browser routes without exposing the native API token."""
     uploads = Path(upload_dir).resolve()
@@ -183,7 +184,11 @@ def create_browser_broker_app(
     voices.mkdir(parents=True, exist_ok=True)
     outputs.mkdir(parents=True, exist_ok=True)
 
-    app = FastAPI(docs_url=None, redoc_url=None, openapi_url=None)
+    app = app or FastAPI(docs_url=None, redoc_url=None, openapi_url=None)
+
+    @app.on_event("shutdown")
+    def revoke_browser_sessions() -> None:
+        session_store.revoke_all()
 
     @app.middleware("http")
     async def enforce_browser_boundary(request: Request, call_next):
