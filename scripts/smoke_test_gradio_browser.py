@@ -77,12 +77,25 @@ def main() -> int:
             browser = playwright.chromium.launch()
             page = browser.new_page()
             browser_errors = []
+            browser_network = []
             page.on("pageerror", lambda error: browser_errors.append(str(error)))
             page.on(
                 "console",
                 lambda message: browser_errors.append(message.text)
                 if message.type == "error"
                 else None,
+            )
+            page.on(
+                "request",
+                lambda request: browser_network.append(
+                    f"> {request.method} {request.url}"
+                ),
+            )
+            page.on(
+                "response",
+                lambda response: browser_network.append(
+                    f"< {response.status} {response.url}"
+                ),
             )
             page.on(
                 "requestfailed",
@@ -114,6 +127,14 @@ def main() -> int:
                     + repr(browser_errors)
                     + "; page text: "
                     + repr(page.locator("body").inner_text()[:2000])
+                    + "; browser network: "
+                    + repr(browser_network[-100:])
+                    + "; page state: "
+                    + repr(
+                        page.evaluate(
+                            "() => ({readyState: document.readyState, title: document.title, scripts: [...document.scripts].map((script) => ({src: script.src, type: script.type, loaded: script.dataset.loaded || null})), configElements: [...document.querySelectorAll('[id*=config], [data-]')].slice(0, 20).map((element) => ({tag: element.tagName, id: element.id, data: {...element.dataset}})), html: document.documentElement.outerHTML.slice(0, 5000)})"
+                        )
+                    )
                 ) from exc
             expect(page.locator(".studio-step")).to_have_count(4)
             expect(page.get_by_text("LOCAL PROCESSING")).to_be_visible()
