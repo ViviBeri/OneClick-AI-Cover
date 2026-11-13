@@ -107,3 +107,58 @@ def test_job_store_records_failures():
     assert failed.error == "RVC failed"
     with pytest.raises(ValueError, match="Cannot update a failed job"):
         store.mark_running(job.id)
+
+
+def test_sqlite_job_store_persists_completed_jobs_after_reopen(tmp_path):
+    database = tmp_path / "data" / "jobs.sqlite3"
+    output = tmp_path / "cover.wav"
+    output.write_bytes(b"audio")
+
+    first = LocalJobStore(database)
+    job = first.create()
+    first.mark_running(job.id)
+    first.update_progress(job.id, 0.7, "Mixing")
+    completed = first.complete(job.id, output)
+    first.close()
+
+    reopened = LocalJobStore(database)
+    try:
+        restored = reopened.get(job.id)
+        assert restored == completed
+        assert restored.output_path == output.resolve()
+        assert reopened.list() == (restored,)
+    finally:
+        reopened.close()
+
+
+def test_sqlite_job_store_marks_interrupted_jobs_failed_on_reopen(tmp_path):
+    database = tmp_path / "jobs.sqlite3"
+    store = LocalJobStore(database)
+    queued = store.create()
+    running = store.create()
+    store.mark_running(running.id)
+    store.close()
+
+    reopened = LocalJobStore(database)
+    try:
+        assert reopened.get(queued.id).status is JobStatus.FAILED
+        assert reopened.get(queued.id).error == (
+            "The application closed before this job finished."
+        )
+        assert reopened.get(running.id).status is JobStatus.FAILED
+        assert reopened.get(running.id).message == (
+            "Interrupted by application shutdown"
+        )
+    finally:
+        reopened.close()
+
+
+def test_sqlite_job_store_creates_parent_directory(tmp_path):
+    database = tmp_path / "nested" / "state" / "jobs.sqlite3"
+    store = LocalJobStore(database)
+    try:
+        job = store.create()
+        assert database.is_file()
+        assert store.get(job.id) == job
+    finally:
+        store.close()
