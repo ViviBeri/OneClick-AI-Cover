@@ -11,8 +11,9 @@ from pathlib import Path
 import uvicorn
 
 from oneclick_cover.api import create_local_api, validate_loopback_host
+from oneclick_cover.jobs import LocalJobStore
 from oneclick_cover.runner import LocalJobRunner
-from oneclick_cover.settings import OUTPUT_DIR, ROOT, VOICE_DIR
+from oneclick_cover.settings import JOB_DB_PATH, OUTPUT_DIR, ROOT, VOICE_DIR
 
 
 class LocalApiServer:
@@ -34,7 +35,7 @@ class LocalApiServer:
         self.voice_dir = Path(voice_dir)
         self.output_dir = Path(output_dir)
         self.startup_timeout = startup_timeout
-        self.runner = runner or LocalJobRunner()
+        self.runner = runner or LocalJobRunner(store=LocalJobStore(JOB_DB_PATH))
         self._owns_runner = runner is None
         self._token: str | None = None
         self._server: uvicorn.Server | None = None
@@ -143,6 +144,7 @@ class LocalApiServer:
             listener.close()
         if self._owns_runner:
             self.runner.shutdown(wait=True)
+            self.runner.store.close()
 
         with self._lock:
             self._token = None
