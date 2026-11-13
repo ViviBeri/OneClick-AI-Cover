@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import secrets
 import socket
-from threading import Event, RLock, Thread
+from threading import RLock, Thread
 from time import monotonic, sleep
 from pathlib import Path
 
