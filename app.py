@@ -508,7 +508,8 @@ def launch_application(api_server_factory=LocalApiServer):
     global _active_job_store
     try:
         api_server.start()
-        _active_job_store = api_server.runner.store
+        runner = getattr(api_server, "runner", None)
+        _active_job_store = getattr(runner, "store", None)
         demo.launch(
             server_name="127.0.0.1",
             server_port=7860,
