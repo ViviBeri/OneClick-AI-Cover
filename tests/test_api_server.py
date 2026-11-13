@@ -63,3 +63,37 @@ def test_server_start_is_idempotent(tmp_path):
 def test_server_rejects_invalid_startup_timeout():
     with pytest.raises(ValueError, match="positive"):
         LocalApiServer(startup_timeout=0)
+
+
+def test_server_reopens_persistent_job_history(tmp_path):
+    database = tmp_path / "state" / "jobs.sqlite3"
+    output = tmp_path / "outputs" / "cover.wav"
+    output.parent.mkdir()
+    output.write_bytes(b"audio")
+
+    first = LocalApiServer(
+        upload_dir=tmp_path / "uploads",
+        voice_dir=tmp_path / "voices",
+        output_dir=output.parent,
+        job_database_path=database,
+    )
+    first.start()
+    job = first.runner.store.create()
+    first.runner.store.mark_running(job.id)
+    first.runner.store.complete(job.id, output)
+    first.stop()
+
+    second = LocalApiServer(
+        upload_dir=tmp_path / "uploads",
+        voice_dir=tmp_path / "voices",
+        output_dir=output.parent,
+        job_database_path=database,
+    )
+    second.start()
+    try:
+        restored = second.runner.get(job.id)
+        assert restored is not None
+        assert restored.status.value == "completed"
+        assert restored.output_path == output.resolve()
+    finally:
+        second.stop()

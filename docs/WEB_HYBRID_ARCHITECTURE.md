@@ -66,7 +66,7 @@ Any future optional provider must first define:
 
 ## Local persistence
 
-The current job store is process-local and does not provide durable history across application restarts. SQLite is the planned zero-cost local persistence option for project metadata and job history. It must store metadata only; audio and model files remain in managed local folders. SQLite persistence is not yet implemented.
+The local API stores job metadata in SQLite at `data/jobs.sqlite3`. Job records, status, progress, timestamps, errors, and output paths persist across application restarts; audio and model files remain in managed local folders. Jobs that were queued or running when the application last closed are marked failed with an interruption message on the next launch. This is recovery of job history, not automatic resumption of interrupted audio processing. The database is local application state and is excluded from version control.
 
 ## Low-end PC strategy
 

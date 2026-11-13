@@ -56,11 +56,12 @@ OneClick-AI-Cover is designed to take an audio track through a local workflow:
 
 The **Free Model Browser** tab optionally searches public Hugging Face model-card metadata and downloads a user-selected public `.pth` file. No Hub token or paid inference endpoint is required. Public Hub access remains subject to Hugging Face's current rate limits, bandwidth policies, and repository terms. Review the model card, license, and voice permissions before downloading. Downloads are quarantined under `models/unverified/` and do not become selectable until separately imported. The **Model Preflight** tab scans selected `.pth` ZIP metadata without calling `pickle.load()` or `torch.load()`. It reports common RVC marker strings only; it cannot validate tensor dimensions, certify compatibility, or make a model safe. Import and generation require a separate explicit trust acknowledgement. That acknowledgement is not a sandbox: the RVC backend may deserialize pickle payloads while loading a checkpoint. Use only files from publishers you personally trust. Local manual model import remains available.
 
-See the [RVC retrieval index guide](docs/RVC_INDEXES.md) for optional index import and tuning. See [free-tier architecture](docs/FREE_TIER_ARCHITECTURE.md) for the privacy, licensing, and model-safety boundaries. See the [web-first, local-first hybrid architecture](docs/WEB_HYBRID_ARCHITECTURE.md) for the deployment decision and future remote-processing requirements.
+See the [local job history guide](docs/LOCAL_JOB_HISTORY.md) for SQLite persistence and restart behavior. See the [RVC retrieval index guide](docs/RVC_INDEXES.md) for optional index import and tuning. See [free-tier architecture](docs/FREE_TIER_ARCHITECTURE.md) for the privacy, licensing, and model-safety boundaries. See the [web-first, local-first hybrid architecture](docs/WEB_HYBRID_ARCHITECTURE.md) for the deployment decision and future remote-processing requirements.
 
 ### Highlights
 
 - **Local-first processing:** the app runs on your machine; it does not automatically upload your song or recordings to a cloud service.
+- **Persistent job metadata:** the local API stores job status and history in SQLite at `data/jobs.sqlite3`; interrupted jobs are marked failed on restart rather than silently resumed.
 - **Audio input:** MP3, WAV and FLAC are supported by the input flow.
 - **Vocal separation:** Demucs is used to create vocal and instrumental tracks.
 - **Voice conversion:** a command-line adapter invokes a compatible RVC inference backend and model.
