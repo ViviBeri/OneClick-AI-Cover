@@ -14,6 +14,7 @@ from oneclick_cover.training import launch_training_ui
 from oneclick_cover.dataset import prepare_recordings
 from oneclick_cover.settings import ROOT
 from oneclick_cover.system_check import collect_system_info, format_system_report
+from oneclick_cover.api_server import LocalApiServer
 UNVERIFIED_MODEL_DIR = ROOT / "models" / "unverified"
 for folder in (VOICE_DIR, OUTPUT_DIR, LOG_DIR, UNVERIFIED_MODEL_DIR): folder.mkdir(parents=True, exist_ok=True)
 logging.basicConfig(filename=LOG_DIR / "oneclick-cover.log", level=logging.INFO)
@@ -405,4 +406,26 @@ Search public model-card metadata without an account or API token. Search result
             import_button.click(fn=import_voice_model,inputs=[model_upload,import_trust],outputs=[model,import_status])
         with gr.Tab("System"):
             gr.Markdown(f"- Python: `{sys.version.split()[0]}`\n- Voice models folder: `{VOICE_DIR}`\n- Dataset folder: `{ROOT / 'datasets'}`\n- Output folder: `{OUTPUT_DIR}`\n- Log file: `{LOG_DIR / 'oneclick-cover.log'}`")
-if __name__=="__main__": demo.launch(server_name="127.0.0.1",server_port=7860,inbrowser=True,show_error=True,theme=gr.themes.Soft(primary_hue="violet", secondary_hue="cyan", neutral_hue="slate"),css=APP_CSS)
+def launch_application(api_server_factory=LocalApiServer):
+    """Run Gradio with the authenticated loopback API in the same lifecycle."""
+    api_server = api_server_factory()
+    try:
+        api_server.start()
+        demo.launch(
+            server_name="127.0.0.1",
+            server_port=7860,
+            inbrowser=True,
+            show_error=True,
+            theme=gr.themes.Soft(
+                primary_hue="violet",
+                secondary_hue="cyan",
+                neutral_hue="slate",
+            ),
+            css=APP_CSS,
+        )
+    finally:
+        api_server.stop()
+
+
+if __name__ == "__main__":
+    launch_application()

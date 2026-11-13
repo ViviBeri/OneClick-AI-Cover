@@ -17,16 +17,24 @@
 
 ---
 
+## Zero-budget commitment
+
+**The core application is intended to remain free to use.** The default workflow runs on your own Windows PC and does not require a subscription, paid API key, hosted inference service, or cloud GPU.
+
+- **No paid AI API:** Demucs and the RVC inference backend run locally; the app does not call a metered commercial AI endpoint.
+- **No cloud backend dependency:** accounts, cloud databases, and hosted processing are not required.
+- **No required paid hosting:** the desktop application and its local API run on your computer.
+- **Free model discovery:** public Hugging Face model search is optional and uses public model-card metadata; availability and downloads remain subject to the provider's policies and rate limits.
+- **Open-source components:** the project uses third-party software and model assets with their own licenses and terms. See [third-party licenses](docs/THIRD_PARTY.md).
+
+The project does not promise that every way of using it has zero real-world cost. You provide the computer, electricity, internet connection, storage, and any voice model you choose. We will not add a paid API, cloud GPU, or mandatory subscription to the core local workflow.
+
 ## Support this project
 
 If this project is useful to you, consider [sponsoring my open-source work](https://github.com/sponsors/ViviBeri). Your support helps fund ongoing maintenance, testing, documentation, and future improvements.
 
 
 ## What it does
-
-## Optional Supabase cloud account
-
-Supabase is planned as an optional account and metadata layer for profiles, project labels, and processing history. It does not run Demucs/RVC inference. Local generation remains available without an account, and audio, stems, datasets, voice checkpoints, and local filesystem paths are not uploaded by this integration. The initial database schema and Row Level Security policies are documented in [Supabase integration](docs/SUPABASE_INTEGRATION.md). No Supabase credentials are required for local mode.
 
 OneClick-AI-Cover is designed to take an audio track through a local workflow:
 
@@ -109,7 +117,7 @@ The main interface is in `app.py`. Application modules live in `src/oneclick_cov
 | Clean uninstall / app-managed file removal | **Pending** | [Verification plan](docs/verification.md#section-6-uninstall-verification) |
 | Signed release installer and official SHA-256 | **Not published** | No versioned release artifact is available yet |
 
-Automated tests cover sample-rate matching, mono-vocal mixing, stale or invalid RVC output rejection, mocked success/failure paths for Demucs/RVC/MP3 export, stale-file cleanup after FFmpeg failures, partial job-folder cleanup, model quarantine, static checkpoint preflight, checkpoint-trust guards, UI-independent pipeline execution, and local job-state transitions. The local job store is currently in-process only; no HTTP API or UI polling/cancellation endpoint is exposed yet. Windows CI additionally runs real Demucs inference and a Gradio browser callback smoke test. **Mocked RVC pipeline tests do not prove real RVC inference, sound quality, or end-to-end conversion.** A green CI run is not a substitute for a clean-machine installation test.
+Automated tests cover sample-rate matching, mono-vocal mixing, stale or invalid RVC output rejection, mocked success/failure paths for Demucs/RVC/MP3 export, stale-file cleanup after FFmpeg failures, partial job-folder cleanup, model quarantine, static checkpoint preflight, checkpoint-trust guards, UI-independent pipeline execution, and local job-state transitions. The local authenticated HTTP API now starts and stops with the desktop app. Browser-to-API integration, upload handling, and UI polling/cancellation remain pending. Windows CI additionally runs real Demucs inference and a Gradio browser callback smoke test. **Mocked RVC pipeline tests do not prove real RVC inference, sound quality, or end-to-end conversion.** A green CI run is not a substitute for a clean-machine installation test.
 
 See the [verification plan](docs/verification.md) and [evidence template](verification-results/TEMPLATE.md). Do not mark a manual verification item complete until the acceptance criteria and evidence are recorded.
 
