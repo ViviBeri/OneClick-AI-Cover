@@ -509,6 +509,22 @@ Search public model-card metadata without an account or API token. Search result
             gr.Markdown(f"- Python: `{sys.version.split()[0]}`\n- Voice models folder: `{VOICE_DIR}`\n- Dataset folder: `{ROOT / 'datasets'}`\n- Output folder: `{OUTPUT_DIR}`\n- Log file: `{LOG_DIR / 'oneclick-cover.log'}`")
 def launch_application(api_server_factory=LocalApiServer):
     """Run Gradio and the browser broker on one loopback origin."""
+    host = "127.0.0.1"
+    port = 7860
+    if os.environ.get("ONECLICK_GRADIO_STANDALONE_SMOKE") == "1":
+        demo.launch(
+            server_name=host,
+            server_port=port,
+            show_error=True,
+            theme=gr.themes.Soft(
+                primary_hue="violet",
+                secondary_hue="cyan",
+                neutral_hue="slate",
+            ),
+            css=APP_CSS,
+            footer_links=[],
+        )
+        return
     api_server = api_server_factory()
     global _active_job_store
     try:
@@ -518,8 +534,6 @@ def launch_application(api_server_factory=LocalApiServer):
             raise RuntimeError("The local API server did not provide a job runner.")
         _active_job_store = runner.store
 
-        host = "127.0.0.1"
-        port = 7860
         origin = f"http://{host}:{port}"
         sessions = BrowserSessionStore()
         parent_app = FastAPI(docs_url=None, redoc_url=None, openapi_url=None)
