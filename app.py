@@ -136,7 +136,14 @@ def generate(song, model, pitch, vocal_gain, instrumental_gain, fmt, demucs_devi
             progress=lambda fraction, message: progress(fraction, desc=message),
             transcode_fn=transcode_to_wav,
             separate_fn=separate_vocals if separation_backend == "demucs" else None,
-            convert_fn=(\n                (lambda source_vocal, destination, voice_model, pitch_shift: convert_voice(\n                    source_vocal, destination, voice_model, pitch_shift,\n                    index_path=index_path, index_rate=float(index_rate),\n                ))\n                if index_path is not None and float(index_rate) > 0\n                else convert_voice\n            ),
+            convert_fn=(
+                (lambda source_vocal, destination, voice_model, pitch_shift: convert_voice(
+                    source_vocal, destination, voice_model, pitch_shift,
+                    index_path=index_path, index_rate=float(index_rate),
+                ))
+                if index_path is not None and float(index_rate) > 0
+                else convert_voice
+            ),
             export_mp3_fn=audio_utils.export_mp3,
             validate_audio_fn=validate_audio_file,
             validate_model_fn=validate_voice_model,
