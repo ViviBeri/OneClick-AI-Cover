@@ -22,12 +22,12 @@
 **The core application is intended to remain free to use.** The default workflow runs on your own Windows PC and does not require a subscription, paid API key, hosted inference service, or cloud GPU.
 
 - **No paid AI API:** Demucs and the RVC inference backend run locally; the app does not call a metered commercial AI endpoint.
-- **No mandatory cloud account:** Supabase is optional and is not required for local generation.
+- **No cloud backend dependency:** accounts, cloud databases, and hosted processing are not required.
 - **No required paid hosting:** the desktop application and its local API run on your computer.
 - **Free model discovery:** public Hugging Face model search is optional and uses public model-card metadata; availability and downloads remain subject to the provider's policies and rate limits.
 - **Open-source components:** the project uses third-party software and model assets with their own licenses and terms. See [third-party licenses](docs/THIRD_PARTY.md).
 
-The project does not promise that every way of using it has zero real-world cost. You provide the computer, electricity, internet connection, storage, and any voice model you choose. Optional third-party cloud services may charge if you exceed their free allowances or choose a paid plan; they will not be required for the local-first workflow. We will not add a paid API, cloud GPU, or mandatory subscription to the core local workflow.
+The project does not promise that every way of using it has zero real-world cost. You provide the computer, electricity, internet connection, storage, and any voice model you choose. We will not add a paid API, cloud GPU, or mandatory subscription to the core local workflow.
 
 ## Support this project
 
@@ -35,10 +35,6 @@ If this project is useful to you, consider [sponsoring my open-source work](http
 
 
 ## What it does
-
-## Optional Supabase cloud account
-
-Supabase is planned as an optional account and metadata layer for profiles, project labels, and processing history. It does not run Demucs/RVC inference. Local generation remains available without an account, and audio, stems, datasets, voice checkpoints, and local filesystem paths are not uploaded by this integration. The initial database schema and Row Level Security policies are documented in [Supabase integration](docs/SUPABASE_INTEGRATION.md). No Supabase credentials are required for local mode.
 
 OneClick-AI-Cover is designed to take an audio track through a local workflow:
 
