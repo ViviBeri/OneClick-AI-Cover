@@ -10,9 +10,18 @@ import hashlib
 import hmac
 import secrets
 from dataclasses import dataclass
+from pathlib import Path
 from threading import RLock
 from time import monotonic
-from typing import Callable
+from typing import Callable, Literal
+
+from fastapi import FastAPI, Header, HTTPException, Request
+from fastapi.responses import FileResponse, JSONResponse
+from pydantic import BaseModel, Field
+
+from oneclick_cover.jobs import ProcessingJob
+from oneclick_cover.pipeline import run_cover_pipeline
+from oneclick_cover.runner import LocalJobRunner
 
 
 @dataclass(frozen=True)
@@ -226,7 +235,7 @@ def create_browser_broker_app(
         return candidate
 
     @app.post("/api/browser/session")
-    def create_session(response_request: Request):
+    def create_session():
         session = session_store.create()
         response = JSONResponse({"csrf_token": session.csrf_token})
         response.set_cookie(
