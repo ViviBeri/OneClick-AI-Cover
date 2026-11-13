@@ -14,6 +14,8 @@ def convert_voice(
     output_vocal: Path,
     model_path: Path,
     pitch: int = 0,
+    index_path: Path | None = None,
+    index_rate: float = 0.0,
 ) -> None:
     cli = RVC_ROOT / "infer" / "cli.py"
     if not cli.exists():
@@ -32,6 +34,15 @@ def convert_voice(
     if not model_path.is_file():
         raise RuntimeError(f"Voice model file does not exist: {model_path}")
 
+    rate = float(index_rate)
+    if not 0.0 <= rate <= 1.0:
+        raise ValueError("RVC index rate must be between 0 and 1.")
+    selected_index = Path(index_path).expanduser().resolve() if index_path else None
+    if selected_index is not None and not selected_index.is_file():
+        raise RuntimeError(f"RVC index file does not exist: {selected_index}")
+    if selected_index is None:
+        rate = 0.0
+
     command = [
         str(backend_python),
         str(cli),
@@ -46,9 +57,11 @@ def convert_voice(
         "--f0-method",
         "rmvpe",
         "--index-rate",
-        "0",
+        str(rate),
         "--overwrite",
     ]
+    if selected_index is not None and rate > 0:
+        command.extend(["--index", str(selected_index)])
     # Remove any stale file so a backend that exits 0 without writing cannot pass the output check.
     output_vocal.parent.mkdir(parents=True, exist_ok=True)
     output_vocal.unlink(missing_ok=True)

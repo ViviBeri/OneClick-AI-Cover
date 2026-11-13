@@ -56,7 +56,7 @@ OneClick-AI-Cover is designed to take an audio track through a local workflow:
 
 The **Free Model Browser** tab optionally searches public Hugging Face model-card metadata and downloads a user-selected public `.pth` file. No Hub token or paid inference endpoint is required. Public Hub access remains subject to Hugging Face's current rate limits, bandwidth policies, and repository terms. Review the model card, license, and voice permissions before downloading. Downloads are quarantined under `models/unverified/` and do not become selectable until separately imported. The **Model Preflight** tab scans selected `.pth` ZIP metadata without calling `pickle.load()` or `torch.load()`. It reports common RVC marker strings only; it cannot validate tensor dimensions, certify compatibility, or make a model safe. Import and generation require a separate explicit trust acknowledgement. That acknowledgement is not a sandbox: the RVC backend may deserialize pickle payloads while loading a checkpoint. Use only files from publishers you personally trust. Local manual model import remains available.
 
-See [free-tier architecture](docs/FREE_TIER_ARCHITECTURE.md) for the privacy, licensing, and model-safety boundaries. See the [web-first, local-first hybrid architecture](docs/WEB_HYBRID_ARCHITECTURE.md) for the deployment decision and future remote-processing requirements.
+See the [RVC retrieval index guide](docs/RVC_INDEXES.md) for optional index import and tuning. See [free-tier architecture](docs/FREE_TIER_ARCHITECTURE.md) for the privacy, licensing, and model-safety boundaries. See the [web-first, local-first hybrid architecture](docs/WEB_HYBRID_ARCHITECTURE.md) for the deployment decision and future remote-processing requirements.
 
 ### Highlights
 
@@ -66,7 +66,7 @@ See [free-tier architecture](docs/FREE_TIER_ARCHITECTURE.md) for the privacy, li
 - **Voice conversion:** a command-line adapter invokes a compatible RVC inference backend and model.
 - **Audio mixing:** converted vocals are sample-rate matched and mixed with the instrumental.
 - **Export:** WAV output, with optional MP3 export through FFmpeg.
-- **Voice utilities:** import an inference-ready `.pth` model and prepare voice recordings as mono WAV files. Model import and generation are guarded by explicit checkpoint-trust confirmation.
+- **Voice utilities:** import an inference-ready `.pth` model, optionally import its matching RVC `.index` retrieval file, configure index strength, and prepare voice recordings as mono WAV files. Model import and generation are guarded by explicit checkpoint-trust confirmation.
 - **Experimental training access:** a tab can launch the upstream RVC training interface; this is not yet a one-click training pipeline.
 
 ## Quick start (Windows)

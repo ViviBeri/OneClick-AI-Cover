@@ -33,7 +33,7 @@ def test_conversion_disables_index_when_no_index_picker_exists(monkeypatch, tmp_
 
     command = captured["command"]
     index_rate = command.index("--index-rate")
-    assert command[index_rate + 1] == "0"
+    assert command[index_rate + 1] == "0.0"
     assert command[command.index("--pitch") + 1] == "2"
     import soundfile as sf
     assert sf.info(str(output)).frames == 2205
@@ -279,3 +279,68 @@ def test_conversion_rejects_non_audio_output(monkeypatch, tmp_path):
     import pytest
     with pytest.raises(RuntimeError, match="not a readable audio file"):
         conversion.convert_voice(source, output, model)
+
+
+def _prepare_index_conversion(tmp_path, monkeypatch, *, include_index=False):
+    backend = tmp_path / "rvc"
+    (backend / "infer").mkdir(parents=True)
+    (backend / "infer" / "cli.py").write_text("# test stub", encoding="utf-8")
+    python = backend / ".venv" / "Scripts" / "python.exe"
+    python.parent.mkdir(parents=True)
+    python.write_text("", encoding="utf-8")
+    model = tmp_path / "voice.pth"
+    model.write_bytes(b"model")
+    source = tmp_path / "vocal.wav"
+    source.write_bytes(b"audio")
+    index = tmp_path / "voice.index"
+    if include_index:
+        index.write_bytes(b"index")
+    monkeypatch.setattr(conversion, "RVC_ROOT", backend)
+    return model, source, index
+
+
+def test_conversion_passes_explicit_index_and_strength(monkeypatch, tmp_path):
+    import numpy as np
+    import soundfile as sf
+
+    model, source, index = _prepare_index_conversion(
+        tmp_path, monkeypatch, include_index=True
+    )
+    output = tmp_path / "converted.wav"
+    captured = {}
+
+    def fake_run(command, **kwargs):
+        captured["command"] = command
+        sf.write(str(output), np.zeros((2205, 1), dtype=np.float32), 22050)
+        return SimpleNamespace(returncode=0, stderr="", stdout="")
+
+    monkeypatch.setattr(conversion.subprocess, "run", fake_run)
+    conversion.convert_voice(source, output, model, index_path=index, index_rate=0.65)
+
+    command = captured["command"]
+    assert command[command.index("--index") + 1] == str(index.resolve())
+    assert command[command.index("--index-rate") + 1] == "0.65"
+
+
+def test_conversion_rejects_missing_index_before_subprocess(monkeypatch, tmp_path):
+    model, source, index = _prepare_index_conversion(tmp_path, monkeypatch)
+
+    def unexpected_run(*args, **kwargs):
+        raise AssertionError("RVC must not launch with a missing index")
+
+    monkeypatch.setattr(conversion.subprocess, "run", unexpected_run)
+    import pytest
+    with pytest.raises(RuntimeError, match="index file does not exist"):
+        conversion.convert_voice(source, tmp_path / "out.wav", model, index_path=index)
+
+
+def test_conversion_rejects_out_of_range_index_strength(monkeypatch, tmp_path):
+    model, source, index = _prepare_index_conversion(
+        tmp_path, monkeypatch, include_index=True
+    )
+
+    import pytest
+    with pytest.raises(ValueError, match="between 0 and 1"):
+        conversion.convert_voice(
+            source, tmp_path / "out.wav", model, index_path=index, index_rate=1.2
+        )
