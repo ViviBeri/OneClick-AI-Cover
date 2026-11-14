@@ -76,6 +76,56 @@ def main() -> int:
         with sync_playwright() as playwright:
             browser = playwright.chromium.launch()
             page = browser.new_page()
+            page.add_init_script("""
+                window.__startupDiagnostics = { errors: [], rejections: [], resourceErrors: [] };
+                window.addEventListener("error", (event) => {
+                    window.__startupDiagnostics.errors.push({
+                        message: event.message,
+                        source: event.filename,
+                        line: event.lineno,
+                        column: event.colno,
+                    });
+                });
+                window.addEventListener("unhandledrejection", (event) => {
+                    window.__startupDiagnostics.rejections.push(
+                        String(event.reason?.stack || event.reason)
+                    );
+                });
+                window.addEventListener("securitypolicyviolation", (event) => {
+                    window.__startupDiagnostics.resourceErrors.push({
+                        blockedURI: event.blockedURI,
+                        violatedDirective: event.violatedDirective,
+                        sourceFile: event.sourceFile,
+                    });
+                });
+            """)
+            browser_errors = []
+            browser_network = []
+            page.on("pageerror", lambda error: browser_errors.append(str(error)))
+            page.on(
+                "console",
+                lambda message: browser_errors.append(message.text)
+                if message.type == "error"
+                else None,
+            )
+            page.on(
+                "request",
+                lambda request: browser_network.append(
+                    f"> {request.method} {request.url}"
+                ),
+            )
+            page.on(
+                "response",
+                lambda response: browser_network.append(
+                    f"< {response.status} {response.url}"
+                ),
+            )
+            page.on(
+                "requestfailed",
+                lambda request: browser_errors.append(
+                    f"Request failed: {request.method} {request.url}: {request.failure}"
+                ),
+            )
             last_error = None
             while time.monotonic() < deadline:
                 if process.poll() is not None:
@@ -92,7 +142,23 @@ def main() -> int:
             else:
                 raise TimeoutError(f"Gradio app did not start: {last_error}")
 
-            expect(page.locator(".studio-hero")).to_be_visible()
+            try:
+                expect(page.locator(".studio-hero")).to_be_visible(timeout=20000)
+            except Exception as exc:
+                raise RuntimeError(
+                    "Gradio UI did not finish rendering. Browser errors: "
+                    + repr(browser_errors)
+                    + "; page text: "
+                    + repr(page.locator("body").inner_text()[:2000])
+                    + "; browser network: "
+                    + repr(browser_network[-100:])
+                    + "; page state: "
+                    + repr(
+                        page.evaluate(
+                            "() => ({startupDiagnostics: window.__startupDiagnostics, readyState: document.readyState, title: document.title, gradioConfig: {present: Boolean(window.gradio_config), version: window.gradio_config?.version, apiPrefix: window.gradio_config?.api_prefix, mode: window.gradio_config?.mode}, customElement: {registered: Boolean(customElements.get('gradio-app')), instances: [...document.querySelectorAll('gradio-app')].map((element) => ({html: element.outerHTML.slice(0, 2000), shadow: element.shadowRoot?.innerHTML.slice(0, 2000) || null}))}, scripts: [...document.scripts].map((script) => ({src: script.src, type: script.type, text: script.src ? null : script.textContent.slice(0, 500)})), resources: performance.getEntriesByType('resource').filter((entry) => /\\.js($|\\?)/.test(entry.name)).map((entry) => ({name: entry.name, duration: entry.duration, transferSize: entry.transferSize})), body: document.body.innerHTML.slice(0, 5000), html: document.documentElement.outerHTML.slice(0, 2000)})"
+                        )
+                    )
+                ) from exc
             expect(page.locator(".studio-step")).to_have_count(4)
             expect(page.get_by_text("LOCAL PROCESSING")).to_be_visible()
 

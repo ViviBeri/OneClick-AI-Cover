@@ -35,7 +35,9 @@ Local job runner and processing pipeline
 Local files: uploads, models, datasets, outputs
 ```
 
-The local app must bind to `127.0.0.1` by default. The API currently accepts only loopback Host headers, rejects requests carrying a browser `Origin` header, and requires its per-launch bearer token. This deliberately keeps it unavailable to a separate browser client until a same-origin credential broker is implemented and reviewed. Do not expose the local API or Gradio server to a LAN or public internet without a separately reviewed device-pairing and network-security design.
+The Gradio server and browser broker bind to `127.0.0.1` on the same origin. The native job API remains a separate loopback service: it accepts only loopback Host headers, rejects browser `Origin` headers, and requires its per-launch bearer token. The browser broker never forwards that token to the browser. It uses short-lived server-side sessions, an HttpOnly/SameSite=Strict cookie, a separate CSRF token for mutations, and exact Host/Origin checks. Sessions are invalidated when the Gradio application shuts down.
+
+The broker exposes narrowly scoped job list, submit, poll, queued-job cancellation, and result-download routes. Submission currently accepts an existing filename in the managed uploads folder; the browser upload and UI workflow still need to be connected and tested. Do not expose either local service to a LAN or public internet without a separately reviewed device-pairing and network-security design.
 
 ## Product modes
 

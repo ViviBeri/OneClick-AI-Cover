@@ -71,7 +71,18 @@ jobs:
         run: |
           python -m pip install playwright
           python -m playwright install chromium
-      - name: Run Gradio 6 browser callback smoke test
+      - name: Compare standalone Gradio browser callback smoke test
+        if: matrix.python-version == '3.11'
+        env:
+          ONECLICK_GRADIO_STANDALONE_SMOKE: "1"
+        run: python scripts/smoke_test_gradio_browser.py
+      - name: Run minimal FastAPI, broker, and Gradio mount smoke test
+        if: matrix.python-version == '3.11'
+        run: python scripts/smoke_test_gradio_mount.py
+      - name: Run full Gradio UI mount without broker middleware
+        if: matrix.python-version == '3.11'
+        run: python scripts/smoke_test_gradio_product_mount.py
+      - name: Run mounted Gradio 6 browser callback smoke test
         if: matrix.python-version == '3.11'
         run: python scripts/smoke_test_gradio_browser.py
       - name: Check Windows installer contract
