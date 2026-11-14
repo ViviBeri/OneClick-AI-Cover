@@ -79,6 +79,9 @@ jobs:
       - name: Run minimal FastAPI, broker, and Gradio mount smoke test
         if: matrix.python-version == '3.11'
         run: python scripts/smoke_test_gradio_mount.py
+      - name: Run full Gradio UI mount without broker middleware
+        if: matrix.python-version == '3.11'
+        run: python scripts/smoke_test_gradio_product_mount.py
       - name: Run mounted Gradio 6 browser callback smoke test
         if: matrix.python-version == '3.11'
         run: python scripts/smoke_test_gradio_browser.py
