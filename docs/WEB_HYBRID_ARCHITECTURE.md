@@ -82,7 +82,7 @@ Original song
     |       Performance analysis
     |       - F0 / melody contour
     |       - timing / note onsets / durations
-    |       - vibrato rate and depth
+    |       - vibrato rate and depth, plus amplitude-modulation (tremolo) rate and depth where measurable
     |       - pitch bends and transitions
     |       - dynamics / loudness envelope
     |       - phrasing / pauses / syllable alignment
@@ -125,7 +125,7 @@ Target voice input                             |
 Where technically reliable, extract:
 - Fundamental-frequency contour and note transitions.
 - Note onsets, offsets, durations, and phrase boundaries.
-- Vibrato rate and depth.
+- Vibrato rate and depth, plus amplitude-modulation (tremolo) rate and depth where measurable.
 - Pitch bends, slides, and transitions.
 - Amplitude/loudness envelope and dynamic changes.
 - Syllable timing, pauses, and lyric alignment where supported.
@@ -135,7 +135,7 @@ These measurements guide conversion and quality control. They do not guarantee t
 
 ### Output quality gates
 
-Before mixing, compare the converted vocal with the source performance for plausible duration and phrase alignment, pitch contour and note transitions, vibrato rate/depth where measurable, loudness and dynamics, clipping, silence, discontinuities, and obvious conversion artefacts.
+Before mixing, compare the converted vocal with the source performance for plausible duration and phrase alignment, pitch contour and note transitions, vibrato and amplitude-modulation rate/depth where measurable, loudness and dynamics, clipping, silence, discontinuities, and obvious conversion artefacts.
 
 Keep the original separated vocal as a non-destructive reference. Do not overwrite it. Allow the user to preview the converted vocal before final mixing.
 
