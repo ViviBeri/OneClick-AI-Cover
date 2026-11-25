@@ -60,6 +60,8 @@ The **Free Model Browser** tab optionally searches public Hugging Face model-car
 
 See the [local job history guide](docs/LOCAL_JOB_HISTORY.md) for SQLite persistence and restart behavior. See the [RVC retrieval index guide](docs/RVC_INDEXES.md) for optional index import and tuning. See [free-tier architecture](docs/FREE_TIER_ARCHITECTURE.md) for the privacy, licensing, and model-safety boundaries. See the [web-first, local-first hybrid architecture](docs/WEB_HYBRID_ARCHITECTURE.md) for the deployment decision and future remote-processing requirements.
 
+See the [VoiceProfile and VocalPerformanceDescriptor contracts](docs/ENGINE_CONTRACTS.md) for the versioned domain schemas, evaluation harness, migration requirements, and M1 exit criteria.
+
 ### Highlights
 
 - **Local-first processing:** the app runs on your machine; it does not automatically upload your song or recordings to a cloud service.
