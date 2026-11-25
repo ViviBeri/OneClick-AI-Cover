@@ -349,3 +349,83 @@ M1 — Performance Contract & Analyser is complete only when:
 - No conversion backend is selected or required to close M1.
 
 M2 — Backend Integration & Preservation Validation consumes these contracts. It evaluates short-reference candidates against the same harness, wires RVC through trained/imported profiles, derives metric-specific thresholds using the stated calibration rule, then validates converted performance and mixing with the original instrumental.
+## 7. Review addendum — enforceable edge-case requirements
+
+This section is normative where earlier wording is less specific. The document remains proposed for implementation review; this addendum is not approval and does not claim implementation.
+
+### 7.1 Profile lineage, uniqueness, and schema-version floor
+
+- derived_from_profile_id is a directed edge to an existing predecessor. The graph must be a DAG. Every write rejects self-links, missing predecessors (except null root links), and any edge that creates a cycle. Enforce this transactionally and test cycle rejection at write.
+- Enforce uniqueness on the canonical tuple (mode, sorted artifact_id set, engine_identity.id, consent.statement_sha256, provenance snapshot). An identical create request returns the existing profile ID and a deduplication result; it does not create a duplicate. A changed artifact, engine/config, mode, consent statement, or provenance snapshot creates a distinct immutable profile. Display metadata is excluded.
+- Conversion engine identity remains provider/backend/version/config hash. Analyser identity is separate and mandatory: every descriptor and evaluation report stores analyser_version and analyser_config_sha256 directly. Neither may be inferred from the conversion engine identity.
+- The store declares schema_version and minimum_reader_version (or equivalent monotonic capability floor). Readers check the floor before decoding. Newer unsupported data raises a typed UnsupportedSchemaVersion error; no partial load, silent defaults, rewrite, or misinterpretation. Test old-reader/new-data rejection.
+- Migrations validate the complete dataset before commit, preserve a recoverable backup, and leave the old store untouched on any failure.
+
+### 7.2 Consent, deletion, and artifact availability policy
+
+Consent and deletion are checked at every operation, not merely in UI or initial profile selection. The authoritative policy service checks current append-only consent events, tombstone state, rights/provenance, and artifact integrity before job creation and again immediately before export/share. Cached eligibility is not authorization.
+
+Local use distinguishes new conversion from playback of an existing local output. Revocation immediately blocks new conversions. Existing generated output may remain playable locally only while retained and verified; export/share are blocked unless a separate, explicit, still-valid rights basis covers that specific output and destination. Profile deletion immediately tombstones the profile, blocks conversion/export/share, and schedules profile-linked artifacts and derived outputs for purge under reference tracking and applicable retention rules. After purge, playback is blocked. Tombstones retain only minimal non-content audit metadata. Missing, inaccessible, size-mismatched, or hash-mismatched required artifacts fail closed. An independent rendered output may play only if its own artifact verifies and policy permits.
+
+| State | New local conversion | Play existing local output | Export | Share |
+|---|---|---|---|---|
+| Consent confirmed, profile active, required artifacts verified | Allow if other gates pass | Allow if output verifies | Allow after fresh policy check | Allow after fresh policy check |
+| Consent revoked, profile not deleted | Block | Allow only for retained, verified output, absent purge requirement | Block unless separate explicit valid rights basis covers it | Block unless separate explicit valid rights basis covers it |
+| Profile tombstoned/deleted | Block | Block after purge; disabled during purge by default | Block | Block |
+| Required profile artifact missing or integrity mismatch | Block | Independent output only if its own artifact verifies and policy permits | Block for profile-dependent output | Block |
+| Legacy/imported profile with unverified consent or required rights | Block | Independent verified output only, if policy permits | Block | Block |
+
+This is a minimum-deny policy; stricter applicable policy takes precedence. Emit typed denial reasons such as consent_revoked, profile_tombstoned, consent_unverified, artifact_missing, artifact_integrity_failed, and rights_basis_missing. Do not place audio content in logs.
+
+Mandatory enforcement points: (1) profile resolution/job creation, before loading model/reference audio; (2) immediately before export write; and (3) immediately before share/transmission. Export/share re-read authoritative policy and verify the output artifact. Integration tests must revoke consent or tombstone a profile after job creation and prove the later export/share check blocks it.
+
+### 7.3 Canonical frame-grid resampling and schema invariants
+
+Resampling from extractor-native grids follows these fixed rules:
+- Continuous RMS amplitude and continuous confidence: linear interpolation between valid bracketing samples. No extrapolation outside valid support; unsupported target frames become unavailable/low-confidence.
+- F0: interpolate in log2-Hz only between adjacent valid, voiced, non-octave-error estimates. Never interpolate across unvoiced, low-confidence, octave-error, or excessive-gap regions. The maximum permitted gap is a versioned analyser parameter; otherwise target F0 remains null/unvoiced.
+- Boolean masks and flags: nearest-neighbour, ties toward the earlier source frame. Never linearly interpolate booleans.
+- Event timestamps and segment boundaries remain continuous seconds; do not snap them to frames. Any future frame-indexed event labels use nearest-neighbour, ties earlier.
+- Methods, gap limit, and boundary support policy are included in analyser config and its hash.
+
+Schema validation derives the required length of every frame-indexed array from frame_grid.n_frames. This applies to all current and future frame-indexed arrays, including raw/corrected F0, voicing mask/confidence, octave flags, RMS, and per-frame confidence/status. Reject serialization and deserialization on any mismatch; never truncate, pad, or repair silently. Add parameterized tests that shorten and lengthen each array.
+
+### 7.4 F0 metric representation and reference
+
+F0 preservation correlation uses corrected_hz only where octave correction is available, confident, and not flagged. Do not fall back to raw_hz where correction is missing or uncertain; exclude those frames. This measures performed pitch after octave-error correction. Raw estimator diagnostics remain separate and must not be conflated with preservation scoring.
+
+Convert valid pitch to log2(f0_hz / 1 Hz) before Pearson correlation. The 1 Hz reference makes the logarithm dimensionless; changing the reference by a constant does not change Pearson correlation. Any future absolute pitch-error metric must define its reference and units explicitly.
+
+### 7.5 Versioned thresholds and determinism tolerances
+
+The analyser config must serialize and hash every decision threshold/window, including F0 voicing and corrected-F0 confidence thresholds; available/low-confidence boundaries; vibrato minimum sustain, analysis window, segment confidence threshold and matching rules; F0 maximum interpolation gap; pause amplitude/minimum-duration thresholds; and onset confidence thresholds. Any change changes analyser_config_sha256 and makes prior results stale.
+
+For the same input bytes, analyser build/config, and declared execution profile, M1 determinism tests use these initial field-specific tolerances:
+- timestamps/frame-grid: exact integer/sample equality; serialized decimal seconds within 1e-9 seconds;
+- masks, enums, reason codes, segment counts, and event ordering: exact equality;
+- F0 and vibrato rate: absolute error <= 1e-4 in stated units;
+- vibrato depth: absolute error <= 1e-3 cents;
+- RMS and confidence: absolute error <= 1e-6;
+- metric outputs: absolute error <= 1e-6 unless a metric defines stricter exact/integer comparison.
+
+These are not claims of bit-identical CPU/GPU or cross-platform output. Cross-platform reproducibility needs a separately named execution profile and measured tolerances. If observed repeatability exceeds a tolerance, revise it through a versioned specification change before accepting baselines; never widen it silently.
+
+### 7.6 Evaluation report comparability and mandatory discrimination gate
+
+Every report schema requires a comparison_identity object containing engine_identity, analyser_version, analyser_config_sha256, metric_implementation, metric_config_sha256, and evaluation_set_sha256. Comparison rejects any mismatch by default with IncompatibleEvaluationReports. An explicit allow_incompatible_comparison=true permits diagnostic side-by-side display only; the result is labelled non-comparable and cannot produce a pass/fail decision or aggregate score. Missing identity fields invalidate the report.
+
+Discrimination is a hard harness gate. Each required controlled perturbation must score in the expected degraded direction and outside the identity-repeatability acceptance band. If a bad pair scores as well as identity, that metric fails and cannot be used for M2 threshold derivation. The overall M1 harness gate fails if any required metric fails discrimination. A diagnostic report may still be emitted with status failed_discrimination, but cannot be accepted.
+
+Aggregate distributions use equal weight per eligible song, never duration or frame weighting. Report p50, p90, and p95 for every aggregatable metric, plus eligible-song count, excluded-song count, and coverage distribution. Retain per-song values and exclusion reasons. If eligible samples are below the metric's declared minimum, report insufficient_samples instead of a percentile.
+
+### 7.7 Human-rating protocol deferred; M2 threshold approval blocked
+
+M1 does not derive or approve backend thresholds from human ratings. M2 threshold derivation is explicitly deferred until a separate calibration protocol is approved and versioned. Before ratings begin, that protocol must specify: rights-cleared clip selection and stratification; a predeclared minimum clip count; rater eligibility and independent raters per clip; blinding/randomization and conflict exclusions; a fixed anchored 5-point rubric and label mapping; a named inter-rater agreement statistic with minimum threshold and confidence interval; disputed-clip handling; threshold selection, false-accept/false-reject trade-off, minimum sample counts, and independent holdout validation.
+
+If agreement is below the approved minimum, disputed clips are excluded from threshold fitting, reported, and the rating set is expanded/re-run. Do not settle disagreements informally after seeing metric scores. Until the protocol and its numeric clip/rater/agreement requirements are approved, M2 may run exploratory evaluations only; it must not claim calibrated thresholds or release-grade pass/fail preservation acceptance. No threshold may be selected after inspecting which values make a backend pass.
+
+### 7.8 Additional M1 acceptance tests
+
+M1 requires automated tests for DAG enforcement/cycle rejection; deterministic profile deduplication; mandatory analyser identity; schema-version floor rejection; the consent/deletion/artifact matrix at job creation and again at export/share; typed resampling including no F0 interpolation across invalid gaps; rejection of every frame-indexed array whose length differs from n_frames; report comparison identity and explicit non-comparable override; discrimination failure blocking harness acceptance and M2 threshold derivation; and unweighted p50/p90/p95 aggregation with minimum-sample handling.
+
+M2 remains blocked on a separately approved human-rating calibration protocol. This addendum does not select a conversion backend and does not claim that these tests or runtime gates are implemented.
