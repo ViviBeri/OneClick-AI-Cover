@@ -180,15 +180,28 @@ This remains an advanced, partly manual workflow. The [voice-training guide](doc
 - [ ] Verify installer on a clean Windows machine
 - [ ] Benchmark memory, CPU and GPU performance and define low-resource profiles
 
-### Dual voice-input and performance-preserving conversion
+### M1 — Performance Contract & Analyser (backend-independent)
 
-- [ ] Define and implement the shared target-voice profile contract
-- [ ] Validate short voice references and integrate a compatible few-shot/reference-conditioned backend
-- [ ] Keep standard RVC checkpoint inference as the dedicated-model path
-- [ ] Improve dedicated voice dataset preparation, training, import, and model lifecycle
-- [ ] Analyse source-vocal pitch contour, timing, vibrato, pitch bends, dynamics, and phrasing
-- [ ] Align and quality-check converted vocals against source performance attributes
-- [ ] Mix the converted vocal with the original instrumental and verify listening quality
+- [ ] Define and validate the versioned VoiceProfile schema for reference, trained, and imported modes
+- [ ] Define the serializable VocalPerformanceDescriptor schema and analyser output contract
+- [ ] Implement VoiceProfile persistence, consent/ownership metadata, artifact references, and quality-score provenance
+- [ ] Add an idempotent migration from existing imported RVC .pth models to mode=imported profiles, with rollback
+- [ ] Validate source-separation quality on a fixed, rights-cleared evaluation set before accepting analyser measurements
+- [ ] Implement F0 contour with voicing mask, note/onset alignment, vibrato estimates, RMS/dynamics envelope, pause map, and optional syllable/phoneme alignment
+- [ ] Add descriptor schema validation and serialization round-trip tests
+- [ ] Build the evaluation harness for F0 correlation, onset timing error, vibrato rate/depth delta, loudness-envelope correlation, and syllable/phoneme alignment
+- [ ] Run the harness on the identity-conversion baseline and record metric coverage and repeatability
+
+**M1 exit gate:** fixed evaluation songs pass the separation-quality gate; descriptors round-trip; schema and migration tests pass; the identity baseline produces a complete, interpretable metric report. No conversion backend decision is required to close M1.
+
+### M2 — Backend Integration & Preservation Validation
+
+- [ ] Evaluate short-reference conversion candidates against the M1 harness using the same fixed source set and metrics
+- [ ] Wire standard RVC inference through VoiceProfile(mode=trained|imported)
+- [ ] Set preservation acceptance thresholds from M1 identity-baseline and repeatability results
+- [ ] Validate converted vocal timing, pitch, vibrato, dynamics, and available syllable/phoneme alignment
+- [ ] Mix the accepted converted vocal with the original instrumental and validate loudness/timing match
+- [ ] Record listening-test evidence alongside objective metric reports
 
 ### Studio, companion access, and release
 
