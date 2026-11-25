@@ -207,16 +207,31 @@ The local API stores job metadata in SQLite at data/jobs.sqlite3. Job records, s
 
 ## Implementation sequence
 
-1. Stabilize the local processing engine and regression tests.
-2. Complete and review the secure browser broker and upload/job-control integration.
-3. Record one real end-to-end conversion using an authorized song and compatible dedicated RVC model.
-4. Define the shared target-voice profile and voice-input validation contract.
-5. Implement performance-analysis extraction and measurable output quality checks.
-6. Evaluate and integrate a compatible short-reference voice-conversion backend behind an adapter; do not claim support until real inference and licensing are verified.
-7. Improve dedicated voice-model training, import, and lifecycle workflows.
-8. Connect the responsive Studio UI to both voice-input modes and the unified job pipeline.
-9. Add secure same-network Android/PWA pairing.
-10. Evaluate remote processing only if a separately funded, opt-in design is approved.
+### M1 — Performance Contract & Analyser (backend-independent)
+
+1. Specify and validate the versioned VoiceProfile and VocalPerformanceDescriptor contracts.
+2. Add VoiceProfile persistence, consent/ownership metadata, artifact references, and quality-score provenance.
+3. Migrate existing imported RVC .pth models to `mode=imported` profiles with idempotency and rollback.
+4. Validate source-separation quality on a fixed, rights-cleared evaluation set; failed separation blocks performance scoring.
+5. Implement the backend-neutral vocal analyser and descriptor serialization.
+6. Build the objective evaluation harness and record identity-conversion baseline metrics.
+
+M1 must be independently closable. It must not depend on selecting or integrating a voice-conversion backend.
+
+### M2 — Backend Integration & Preservation Validation
+
+1. Evaluate short-reference backends against the M1 fixed set and metric harness.
+2. Wire RVC inference through `VoiceProfile(mode=trained|imported)`.
+3. Set preservation thresholds using M1 identity-baseline and repeatability results.
+4. Validate converted vocal performance against the descriptor and agreed thresholds.
+5. Mix the converted vocal with the original instrumental and verify loudness, timing, and listening quality.
+
+### Product integration after the engine gates
+
+1. Complete the secure browser broker and upload/job-control integration.
+2. Connect the responsive Studio UI to the validated profile and job contracts.
+3. Add secure same-network Android/PWA pairing.
+4. Evaluate remote processing only if a separately funded, opt-in design is approved.
 
 ## Non-goals
 
