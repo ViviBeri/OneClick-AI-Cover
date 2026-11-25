@@ -34,20 +34,20 @@ VoiceProfile is the immutable domain snapshot used to resolve a short reference 
   "mode": "reference",
   "status": "ready",
   "engine_identity": {
-    "id": "local/provider-neutral-backend@1.2.3+config_sha256:0123456789abcdef",
+    "id": "local/provider-neutral-backend@1.2.3+config_sha256:0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
     "provider": "provider-neutral",
     "backend": "backend-adapter",
     "version": "1.2.3",
-    "config_sha256": "0123456789abcdef",
+    "config_sha256": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
     "capabilities": ["reference-conditioned-conversion"]
   },
   "artifacts": [
     {
-      "artifact_id": "sha256:0123456789abcdef",
+      "artifact_id": "sha256:0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
       "role": "voice_reference",
-      "storage_locator": "managed-artifacts/sha256/01/0123456789abcdef",
+      "storage_locator": "managed-artifacts/sha256/01/0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
       "media_type": "audio/wav",
-      "sha256": "0123456789abcdef",
+      "sha256": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
       "size_bytes": 123456
     }
   ],
@@ -60,7 +60,7 @@ VoiceProfile is the immutable domain snapshot used to resolve a short reference 
     "status": "confirmed",
     "attestation_id": "consent_01J...",
     "statement_version": 1,
-    "statement_sha256": "0123456789abcdef",
+    "statement_sha256": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
     "voice_subject": "self",
     "rights_basis": "self_recorded",
     "attested_by": "local-user",
@@ -120,7 +120,7 @@ Do not store `quality.score`. Store records shaped like:
   "engine_identity": "provider/backend@1.2.3+config_sha256:...",
   "analyser_version": "vocal-analyser/0.1.0",
   "metric_implementation": "cover-metrics/0.1.0",
-  "evaluation_set_sha256": "0123456789abcdef",
+  "evaluation_set_sha256": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
   "metrics": {
     "f0_contour_correlation": {"value": 0.98, "coverage": 0.91, "status": "available"},
     "onset_error_median_ms": {"value": 2.1, "status": "available"},
@@ -189,7 +189,7 @@ A successfully analysed segment with no detected vibrato is represented as an av
   "audio": {
     "sample_rate_hz": 44100,
     "channels": 1,
-    "duration_seconds": 12.5
+    "duration_seconds": 0.03
   },
   "analysis": {
     "engine_identity": "vocal-analyser@0.1.0+config_sha256:...",
@@ -198,7 +198,7 @@ A successfully analysed segment with no detected vibrato is represented as an av
       "hop_samples": 441,
       "window_samples": 1764,
       "frame_origin": "centered",
-      "n_frames": 1250
+      "n_frames": 3
     },
     "f0": {
       "status": "available",
@@ -233,12 +233,12 @@ A successfully analysed segment with no detected vibrato is represented as an av
     "rms": {
       "status": "available",
       "reason": null,
-      "values": [0.0, 0.12]
+      "values": [0.0, 0.12, 0.10]
     },
     "pause_map": {
       "status": "available",
       "reason": null,
-      "intervals": [{"start_seconds": 0.0, "end_seconds": 0.4}]
+      "intervals": []
     },
     "alignment": {
       "unit": "phoneme",
