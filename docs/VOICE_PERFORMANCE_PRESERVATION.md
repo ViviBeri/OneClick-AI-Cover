@@ -29,7 +29,7 @@ The app must retain model quarantine, checkpoint preflight, explicit trust ackno
 The original vocal is the performance reference. Extract, where technically reliable:
 - Fundamental-frequency contour and note transitions.
 - Note onsets, offsets, durations, and phrase boundaries.
-- Vibrato rate and depth.
+- Vibrato rate and depth, plus amplitude-modulation (tremolo) rate and depth where measurable.
 - Pitch bends and slides.
 - Loudness/dynamics envelope.
 - Pauses, syllable timing, and lyric alignment where supported.
@@ -51,7 +51,7 @@ Keep the original separated vocal as a non-destructive reference. Never overwrit
 
 ## Quality checks
 
-At minimum, validate output duration and phrase timing, pitch contour and note-transition consistency, vibrato rate/depth where measurable, loudness and dynamics, clipping, silence, discontinuities, conversion artefacts, and sample-rate/channel compatibility before mixing.
+At minimum, validate output duration and phrase timing, pitch contour and note-transition consistency, vibrato and amplitude-modulation rate/depth where measurable, loudness and dynamics, clipping, silence, discontinuities, conversion artefacts, and sample-rate/channel compatibility before mixing.
 
 Automated metrics must be supplemented by listening tests. A high similarity score alone is not proof of a natural-sounding result.
 
