@@ -46,11 +46,13 @@ OneClick-AI-Cover is designed to replace the singer's vocal identity while prese
 
 | Stage | What happens |
 |---|---|
-| **01 · Prepare** | Validate the selected MP3, WAV, or FLAC file and prepare audio for processing. |
-| **02 · Separate** | Demucs separates vocals from the instrumental. |
-| **03 · Analyse** | Analyse the original vocal's pitch contour, timing, vibrato, bends, dynamics, and phrasing where supported. |\n| **04 · Convert** | Convert the original vocal into the user's voice using a compatible short-reference backend or dedicated voice model. |
-| **04 · Mix** | Converted vocals are sample-rate matched and mixed with the instrumental. |
-| **05 · Export** | Save a WAV file or choose optional MP3 export through FFmpeg. |
+| **01 · Prepare** | Validate the original MP3, WAV, or FLAC song. |
+| **02 · Separate** | Demucs separates the original vocal and instrumental. |
+| **03 · Analyse** | Analyse the original vocal's pitch contour, timing, vibrato, bends, dynamics, and phrasing where supported. |
+| **04 · Select voice** | Use a supported short voice reference or a dedicated trained voice model. |
+| **05 · Convert** | Recreate the source vocal performance in the selected target voice. |
+| **06 · Validate** | Check timing, pitch, dynamics, clipping, silence, and conversion artefacts. |
+| **07 · Mix and export** | Mix the converted vocal with the original instrumental and export WAV or MP3. |
 
 ### Free public model browser
 
@@ -84,24 +86,9 @@ Python does not need to be installed manually. Keep the complete terminal output
 
 ## Architecture
 
-```text
-Audio file (MP3 / WAV / FLAC)
-             |
-             v
-     Validate and prepare
-             |
-             v
-     Demucs separation
-       /           \
-      v             v
-   Vocals       Instrumental
-      |
-      v
-   RVC inference + compatible .pth model
-      |
-      v
- Sample-rate matching -> Mix -> WAV / optional MP3
-```
+The original song supplies the performance reference; the user's voice recording or dedicated model supplies the target voice identity. The app separates the original vocal and instrumental, analyses the vocal performance, converts the vocal with a compatible backend, validates the result, and mixes it with the original instrumental. Both voice-input modes share one target-voice contract.
+
+See the [local-first architecture](docs/WEB_HYBRID_ARCHITECTURE.md) and [voice performance specification](docs/VOICE_PERFORMANCE_PRESERVATION.md).
 
 The main interface is in `app.py`. Application modules live in `src/oneclick_cover/`; the RVC adapter and Demucs runner are under `scripts/`. Automated regression tests are in `tests/`. The animated README artwork is built from `readme-hero.svg` and `readme-pipeline-3d.svg`. Both are lightweight SVG assets and are **not runtime dependencies**. The app itself remains a Gradio interface; the 3D artwork is documentation only, not a 3D application UI.
 
@@ -176,6 +163,8 @@ This remains an advanced, partly manual workflow. The [voice-training guide](doc
 
 ## Roadmap
 
+### Foundation and current integration
+
 - [x] Local Gradio starter UI and audio-processing modules
 - [x] Managed Python setup script and pinned RVC backend
 - [x] Audio input preparation and optional FFmpeg MP3 export
@@ -185,12 +174,26 @@ This remains an advanced, partly manual workflow. The [voice-training guide](doc
 - [x] Public model download quarantine and regression tests
 - [x] Static non-deserializing RVC checkpoint preflight and regression tests
 - [x] Explicit trust acknowledgement before checkpoint import and generation
-- [ ] Verify installer on a clean Windows machine
-- [ ] Verify full conversion with authorized audio and a compatible model
-- [ ] Benchmark memory, CPU and GPU performance and define low-resource profiles
 - [x] Persist cover-generation jobs in local SQLite and display recent jobs in the Gradio history tab ([PR #52](https://github.com/ViviBeri/OneClick-AI-Cover/pull/52))
-- [ ] Connect a separate browser client to the authenticated local job API for asynchronous status, cancellation, and result retrieval
-- [ ] Redesign the responsive browser UI while retaining local processing
+- [ ] Complete secure browser upload, job submission, polling, cancellation, and result retrieval
+- [ ] Record one real end-to-end conversion with an authorized song and compatible dedicated RVC model
+- [ ] Verify installer on a clean Windows machine
+- [ ] Benchmark memory, CPU and GPU performance and define low-resource profiles
+
+### Dual voice-input and performance-preserving conversion
+
+- [ ] Define and implement the shared target-voice profile contract
+- [ ] Validate short voice references and integrate a compatible few-shot/reference-conditioned backend
+- [ ] Keep standard RVC checkpoint inference as the dedicated-model path
+- [ ] Improve dedicated voice dataset preparation, training, import, and model lifecycle
+- [ ] Analyse source-vocal pitch contour, timing, vibrato, pitch bends, dynamics, and phrasing
+- [ ] Align and quality-check converted vocals against source performance attributes
+- [ ] Mix the converted vocal with the original instrumental and verify listening quality
+
+### Studio, companion access, and release
+
+- [ ] Redesign the responsive browser UI around original-song upload, voice selection, performance analysis, preview, and export while retaining local processing
+- [ ] Add secure same-network Android/PWA pairing
 - [ ] Evaluate optional remote inference only after privacy, security, consent, and cost requirements are met
 - [ ] Complete and verify remote training/checkpoint export workflow
 - [ ] Package a reproducible Windows release and publish its checksum
