@@ -3,7 +3,7 @@
 </p>
 
 <h1 align="center">OneClick-AI-Cover</h1>
-<p align="center"><strong>A local-first, Windows-first AI singing-cover workflow.</strong><br/>Separate vocals · Convert with RVC · Remix · Export</p>
+<p align="center"><strong>A local-first, Windows-first AI singing-cover workstation.</strong><br/>Analyse the original performance · Replace the vocal with your voice · Preserve the instrumental · Export</p>
 
 <p align="center">
   <a href="https://github.com/ViviBeri/OneClick-AI-Cover/actions/workflows/windows-checks.yml"><img src="https://github.com/ViviBeri/OneClick-AI-Cover/actions/workflows/windows-checks.yml/badge.svg" alt="Windows Checks"/></a>
@@ -36,7 +36,7 @@ If this project is useful to you, consider [sponsoring my open-source work](http
 
 ## What it does
 
-OneClick-AI-Cover is designed to take an audio track through a local workflow:
+OneClick-AI-Cover is designed to replace the singer's vocal identity while preserving the original song's melody, timing, vibrato, pitch bends, dynamics, and phrasing as closely as the selected conversion backend allows. Users can provide either a short voice reference supported by a compatible few-shot backend or a dedicated trained voice model. Both modes feed the same local conversion workflow:
 
 <p align="center">
   <img src="readme-pipeline-3d.svg" alt="Animated 3D isometric workflow: prepare audio, separate vocals, convert with RVC, mix, and export" width="100%" />
@@ -48,7 +48,7 @@ OneClick-AI-Cover is designed to take an audio track through a local workflow:
 |---|---|
 | **01 · Prepare** | Validate the selected MP3, WAV, or FLAC file and prepare audio for processing. |
 | **02 · Separate** | Demucs separates vocals from the instrumental. |
-| **03 · Convert** | The RVC adapter uses a compatible, inference-ready `.pth` model. |
+| **03 · Analyse** | Analyse the original vocal's pitch contour, timing, vibrato, bends, dynamics, and phrasing where supported. |\n| **04 · Convert** | Convert the original vocal into the user's voice using a compatible short-reference backend or dedicated voice model. |
 | **04 · Mix** | Converted vocals are sample-rate matched and mixed with the instrumental. |
 | **05 · Export** | Save a WAV file or choose optional MP3 export through FFmpeg. |
 
@@ -65,11 +65,11 @@ See the [local job history guide](docs/LOCAL_JOB_HISTORY.md) for SQLite persiste
 - **Local job API:** the authenticated loopback API exposes job creation, status, queued cancellation, and result retrieval for trusted local integrations. A separate browser client is not connected yet.
 - **Audio input:** MP3, WAV and FLAC are supported by the input flow.
 - **Vocal separation:** Demucs is used to create vocal and instrumental tracks.
-- **Voice conversion:** a command-line adapter invokes a compatible RVC inference backend and model.
+- **Dual voice input:** beginners can provide a short voice reference when a compatible reference-conditioned backend is available; advanced users can train or import a dedicated compatible voice model. Standard RVC inference still requires a trained checkpoint.\n- **Performance analysis:** analyse the original vocal's pitch, timing, vibrato, bends, dynamics, and phrasing where supported; use these measurements for conversion guidance and output checks.\n- **Voice conversion:** convert the original vocal performance into the selected target voice. Exact preservation depends on backend capability and must be validated.
 - **Audio mixing:** converted vocals are sample-rate matched and mixed with the instrumental.
 - **Export:** WAV output, with optional MP3 export through FFmpeg.
 - **Voice utilities:** import an inference-ready `.pth` model, optionally import its matching RVC `.index` retrieval file, configure index strength, and prepare voice recordings as mono WAV files. Model import and generation are guarded by explicit checkpoint-trust confirmation.
-- **Experimental training access:** a tab can launch the upstream RVC training interface; this is not yet a one-click training pipeline.
+- **Experimental training access:** a tab can launch the upstream RVC training interface; this is not yet a one-click training pipeline. See the [voice input and performance-preservation specification](docs/VOICE_PERFORMANCE_PRESERVATION.md).
 
 ## Quick start (Windows)
 
