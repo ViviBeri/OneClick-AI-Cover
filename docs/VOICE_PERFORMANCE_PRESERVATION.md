@@ -24,6 +24,12 @@ Intended for users who want repeatable results. Users prepare a larger single-sp
 
 The app must retain model quarantine, checkpoint preflight, explicit trust acknowledgement, provenance, and local-only storage.
 
+## Delivery sequence
+
+The engine work is split into two independently scoped milestones. **M1 — Performance Contract & Analyser** defines the backend-neutral VoiceProfile and VocalPerformanceDescriptor contracts, validates source-separation quality, implements analysis and the identity-baseline harness, and migrates existing imported RVC checkpoints. **M2 — Backend Integration & Preservation Validation** evaluates short-reference backends, integrates RVC through VoiceProfile, derives acceptance thresholds from M1 results, and validates final mixing. See [ENGINE_CONTRACTS.md](ENGINE_CONTRACTS.md) for schemas and exit criteria.
+
+Source-separation quality is a precondition: samples that fail the documented separation gate must not be used to establish F0, vibrato, or dynamics baselines.
+
 ## Performance analysis
 
 The original vocal is the performance reference. Extract, where technically reliable:
