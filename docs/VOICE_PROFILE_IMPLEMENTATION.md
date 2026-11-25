@@ -6,11 +6,15 @@
 
 Use a conforming RFC 8785 JSON Canonicalization Scheme (JCS) implementation for every hash of a structured JSON record, including VoiceProfile snapshots, consent event payloads, manifests and canonical consent statement documents.
 
-- Use a maintained, pinned JCS library (the initial candidate is the pure-Python `rfc8785` implementation). Pin its exact version in the project dependency manifest and include the canonicalizer/library identity and version in the relevant analyser/persistence configuration identity. Do not silently upgrade it.
+- Use a maintained, pinned JCS library (the initial candidate is the pure-Python `rfc8785` implementation). Pin its exact version in the project dependency manifest and record the canonicalizer/library identity and version in the canonicalizer identity. Do not silently upgrade it.
+- The canonicalizer identity records `{library: "rfc8785@<exact-version>", python: "<major>.<minor>"}`. Record it alongside artifacts and include it in the configuration identity used to gate evaluation-report comparability.
+- **Do not include canonicalizer identity, Python version or configuration identity in the content hash input.** A structured record's hash is SHA-256 of that record's JCS canonical UTF-8 bytes only. A media/model artifact's hash is SHA-256 of its exact raw bytes only. Identical bytes must produce identical content hashes across Python versions and machines.
+- The configuration identity is a separate hash over the canonical configuration record (engine, analyser, metric and canonicalizer identities). It determines whether evaluation reports are comparable; it does not change an artifact's content address.
 - Encode canonical output as UTF-8 without a byte-order mark.
 - Apply RFC 8785 property ordering and ECMAScript-compatible number serialization; do not implement a local approximation.
 - Do not substitute `json.dumps(sort_keys=True)`; it is not an RFC 8785 implementation.
 - Reject non-finite numbers (NaN, positive/negative infinity), invalid Unicode and values outside the JCS/I-JSON constraints.
+- Enforce ASCII-only object keys in the wrapper before calling the JCS library. Raise a dedicated typed canonicalization error for any non-ASCII key, including astral-plane characters. Schema documentation and validators must enforce the same ASCII-key rule; the wrapper check is defence in depth.
 - Hash canonical UTF-8 bytes with SHA-256. All textual SHA-256 digests used in identifiers or cross-implementation comparisons are lowercase hexadecimal, prefixed with the algorithm, for example `sha256:<lowercase-hex>`.
 - Audio/model artifact hashes are different: SHA-256 is computed over the exact raw artifact bytes, not a serialized descriptor.
 
@@ -20,17 +24,20 @@ The following rules are schema-level requirements, not optional serializer prefe
 
 - **No floating-point fields for measured values.** Quality scores, confidence values, durations and other derived measurements use validated decimal strings with a documented scale/format (for example `"0.8734"`), or an explicitly specified integer/fixed-point unit. Do not accept Python float, NumPy floating scalar or Decimal interchangeably at the boundary.
 - **Timestamps are integer milliseconds since Unix epoch.** Consent events, tombstones and other timestamped records use integer epoch milliseconds. Reject booleans, floats and RFC 3339/date-time strings before canonicalization. Define the timestamp field names and units in each schema.
-- **Field names are canonical and exact.** Do not hash aliases. If a compatibility boundary accepts an alias, normalize it to the one canonical field name before validation and canonicalization; reject ambiguous payloads containing both names.
+- **Field names are canonical, exact and ASCII-only.** Do not use non-ASCII JSON object keys in hashed payloads. Do not hash aliases. If a compatibility boundary accepts an alias, normalize it to the one canonical ASCII field name before validation and canonicalization; reject ambiguous payloads containing both names.
 - **Array order is explicit.** JCS does not sort arrays. Define ordering for lineage edges, consent events and artifact references in each schema. Sort set-derived collections by a documented stable key before constructing the record; preserve order only where order is semantically meaningful.
 - **No implicit normalization.** Do not silently normalize strings, Unicode, paths, timestamps or numeric values during hashing. Normalize and validate at the schema boundary, then hash the resulting canonical record.
 
 ### Canonicalization conformance tests
 
-- Include at least one published RFC 8785/JCS conformance vector. Assert the exact canonical UTF-8 bytes against the published expected output and assert the SHA-256 digest against a fixed expected lowercase-hex value; do not calculate the expected value using the implementation under test.
-- Cover representative number serialization, Unicode/property ordering, escaped strings, invalid Unicode and rejection of non-finite values.
+- Commit published RFC 8785 Appendix B vectors as reviewable JSON fixture files under `tests/fixtures/jcs/`, not Python literals. Each fixture records its input, expected canonical output (or canonical hex) and independently fixed expected lowercase SHA-256 digest.
+- Assert exact canonical UTF-8 bytes and fixed expected digest for every fixture; never calculate expected values using the implementation under test.
+- Include a negative fixture containing a non-ASCII object key; the wrapper must reject it with the dedicated typed error rather than sorting it.
+- Cover representative number serialization, permitted Unicode string/property ordering, escaped strings, invalid Unicode and rejection of non-finite values.
 - Assert canonical output is UTF-8 without BOM and that the digest is lowercase hexadecimal.
-- Assert equivalent accepted inputs normalize to the same canonical field names and array ordering before hashing.
-- Run the same vectors across supported Windows/Python environments before persisted IDs are relied upon.
+- Assert round-trip idempotence: `canonicalize(parse(canonicalize(x))) == canonicalize(x)`.
+- Run the identical committed fixtures on Python 3.11 and 3.12 and assert byte-for-byte canonical output and SHA-256 equality for every fixture on both versions. Passing independently on both versions without equality assertions is insufficient.
+- Pin the Python minor version used to generate fixture expectations and record the active Python minor version in canonicalizer identity/configuration metadata.
 
 ## 2. Legacy artifact handling: reference in place
 
