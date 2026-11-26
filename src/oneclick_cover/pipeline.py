@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import os
 import shutil
 import tempfile
 import time
@@ -30,12 +31,17 @@ def _write_timing_report(
     root = output_root.resolve()
     path = root / "diagnostics" / f"{run_id}.timings.json"
     path.parent.mkdir(parents=True, exist_ok=True)
-    temporary = path.with_name(f".{path.name}.{uuid4().hex}.tmp")
+    descriptor, temporary_name = tempfile.mkstemp(
+        prefix=f".{path.name}.",
+        suffix=".tmp",
+        dir=path.parent,
+    )
+    temporary = Path(temporary_name)
     try:
-        temporary.write_text(
-            json.dumps(report, ensure_ascii=True, indent=2, sort_keys=True) + "\n",
-            encoding="utf-8",
-        )
+        with os.fdopen(descriptor, "w", encoding="utf-8") as stream:
+            stream.write(
+                json.dumps(report, ensure_ascii=True, indent=2, sort_keys=True) + "\n"
+            )
         temporary.replace(path)
     finally:
         temporary.unlink(missing_ok=True)
