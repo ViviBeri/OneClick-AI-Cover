@@ -5,7 +5,7 @@ from pathlib import Path
 
 import pytest
 
-from oneclick_cover.pipeline import run_cover_pipeline
+from oneclick_cover.pipeline import _write_timing_report, run_cover_pipeline
 
 
 def _run_fake_pipeline(tmp_path: Path, report_path: Path, separate_fn=None) -> Path:
@@ -52,7 +52,7 @@ def _run_fake_pipeline(tmp_path: Path, report_path: Path, separate_fn=None) -> P
 
 
 def test_pipeline_writes_path_free_stage_timing_report(tmp_path):
-    report_path = tmp_path / "reports" / "timings.json"
+    report_path = tmp_path / "outputs" / "reports" / "timings.json"
     output = _run_fake_pipeline(tmp_path, report_path)
 
     assert output.is_file()
@@ -77,7 +77,7 @@ def test_pipeline_writes_path_free_stage_timing_report(tmp_path):
 
 
 def test_pipeline_preserves_failure_timing_report_after_job_cleanup(tmp_path):
-    report_path = tmp_path / "reports" / "failed-run.json"
+    report_path = tmp_path / "outputs" / "reports" / "failed-run.json"
 
     def fail_separation(*_args, **_kwargs):
         raise RuntimeError("synthetic separation failure")
@@ -90,3 +90,13 @@ def test_pipeline_preserves_failure_timing_report_after_job_cleanup(tmp_path):
     assert report["failure_type"] == "RuntimeError"
     assert "separate" in report["stages_seconds"]
     assert not list((tmp_path / "outputs").glob("cover_*"))
+
+
+def test_timing_report_rejects_paths_outside_output_directory(tmp_path):
+    output_root = tmp_path / "outputs"
+    outside_path = tmp_path / "outside" / "timings.json"
+
+    with pytest.raises(ValueError, match="inside the output directory"):
+        _write_timing_report(output_root, outside_path, {"schema_version": 1})
+
+    assert not outside_path.exists()
