@@ -49,7 +49,7 @@ Run the benchmark with an authorized source recording and an authorized,
 inference-ready RVC checkpoint:
 
 ```powershell
-python scripts/benchmark.py --input "D:\\Audio\\source.wav" --model "models\\voices\\authorized-model.pth" --output-dir "outputs\\benchmarks" --report "outputs\\benchmarks\\run-01.json" --device cpu --demucs-segment 5
+python scripts/benchmark.py --input "D:\Audio\\source.wav" --model "models\voices\\authorized-model.pth" --output-dir "outputs\benchmarks" --report "outputs\benchmarks\\run-01.json" --device cpu --demucs-segment 5
 ```
 
 Run it a second time with the same input, model, settings, and machine to
