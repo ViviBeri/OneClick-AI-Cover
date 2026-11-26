@@ -57,7 +57,9 @@ def test_benchmark_main_reads_pipeline_timing_report_from_isolated_run_dir(
         def as_dict(self):
             return {"available": False}
 
-    def fake_pipeline(_source, _model, _pitch, _vocal, _instrumental, _format, output_dir, **_kwargs):
+    def fake_pipeline(
+        _source, _model, _pitch, _vocal, _instrumental, _format, output_dir, **_kwargs
+    ):
         diagnostics = output_dir / "diagnostics"
         diagnostics.mkdir(parents=True)
         (diagnostics / "run.timings.json").write_text(
@@ -67,14 +69,22 @@ def test_benchmark_main_reads_pipeline_timing_report_from_isolated_run_dir(
 
     monkeypatch.setattr(benchmark, "ProcessTreeMemorySampler", FakeSampler)
     monkeypatch.setattr(benchmark, "_audio_duration", lambda _path: 4.0)
-    monkeypatch.setattr(benchmark, "_system_metadata", lambda: {"python_version": "3.x"})
+    monkeypatch.setattr(
+        benchmark, "_system_metadata", lambda: {"python_version": "3.x"}
+    )
     monkeypatch.setattr(benchmark, "run_cover_pipeline", fake_pipeline)
 
-    assert benchmark.main([
-        "--input", str(source),
-        "--model", str(model),
-        "--output-dir", str(output_root),
-    ]) == 0
+    result = benchmark.main(
+        [
+            "--input",
+            str(source),
+            "--model",
+            str(model),
+            "--output-dir",
+            str(output_root),
+        ]
+    )
+    assert result == 0
 
     run_dirs = list(output_root.glob("run_*"))
     assert len(run_dirs) == 1
