@@ -7,12 +7,46 @@ import tempfile
 from pathlib import Path
 from typing import Callable
 
+import soundfile as sf
+
 from oneclick_cover.audio_utils import export_mp3, match_sample_rate, mix_audio, transcode_to_wav
 from oneclick_cover.conversion import convert_voice
 from oneclick_cover.separation_backends import get_separation_backend
 from oneclick_cover.validation import validate_audio_file, validate_voice_model
 
 ProgressCallback = Callable[[float, str], None]
+
+
+def prepare_demucs_input(
+    source: str | Path,
+    destination: str | Path,
+    transcode_fn=transcode_to_wav,
+) -> Path:
+    """Reuse a compatible WAV instead of decoding and rewriting the entire track.
+
+    The current Demucs pipeline consumes stereo 44.1 kHz audio. WAV files that
+    already satisfy that contract can be read directly; every other format or
+    layout follows the existing FFmpeg/SoundFile transcode path.
+    """
+    source_path = Path(source)
+    destination_path = Path(destination)
+
+    if source_path.suffix.lower() == ".wav":
+        try:
+            info = sf.info(str(source_path))
+        except (OSError, RuntimeError, ValueError):
+            info = None
+        if (
+            info is not None
+            and info.format == "WAV"
+            and info.channels == 2
+            and info.samplerate == 44100
+            and info.frames > 0
+        ):
+            return source_path
+
+    transcode_fn(source_path, destination_path)
+    return destination_path
 
 
 def run_cover_pipeline(
@@ -52,10 +86,11 @@ def run_cover_pipeline(
         validate_audio_fn(source)
         validate_model_fn(voice_model)
         job_dir = Path(tempfile.mkdtemp(prefix="cover_", dir=destination_root))
-        wav = job_dir / "input.wav"
 
         report(0.1, "Preparing audio")
-        transcode_fn(source, wav)
+        wav = prepare_demucs_input(source, job_dir / "input.wav", transcode_fn)
+        if wav == source:
+            report(0.1, "Reusing compatible 44.1 kHz stereo WAV")
 
         report(0.25, f"Separating vocals ({separation_backend})")
 
