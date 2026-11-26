@@ -145,37 +145,21 @@ def _audio_duration(path: Path) -> float | None:
         return None
 
 
-def _resolve_report_path(output_root: Path, requested_path: Path) -> Path:
+def _write_report(output_root: Path, report: dict[str, object]) -> Path:
+    """Atomically write the benchmark report to a fixed output location."""
     root = output_root.resolve()
-    candidate = requested_path if requested_path.is_absolute() else root / requested_path
-    resolved = candidate.resolve()
-    try:
-        resolved.relative_to(root)
-    except ValueError as exc:
-        raise ValueError("Benchmark report path must stay inside the output directory.") from exc
-    return resolved
-
-
-def _write_report(
-    output_root: Path, requested_path: Path, report: dict[str, object]
-) -> None:
-    root = output_root.resolve()
-    path = requested_path.resolve()
-    try:
-        path.relative_to(root)
-    except ValueError as exc:
-        raise ValueError("Benchmark report path must stay inside the output directory.") from exc
-
+    path = root / "benchmark-report.json"
     path.parent.mkdir(parents=True, exist_ok=True)
-    temporary = path.with_name(f".{path.name}.tmp")
+    temporary = path.with_name(".benchmark-report.json.tmp")
     try:
         temporary.write_text(
-            json.dumps(report, ensure_ascii=True, indent=2, sort_keys=True) + "\n",
+            json.dumps(report, ensure_ascii=True, indent=2, sort_keys=True) + "\\n",
             encoding="utf-8",
         )
         temporary.replace(path)
     finally:
         temporary.unlink(missing_ok=True)
+    return path
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -185,7 +169,6 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--input", type=Path, required=True, help="Authorized source audio.")
     parser.add_argument("--model", type=Path, required=True, help="Authorized RVC .pth model.")
     parser.add_argument("--output-dir", type=Path, default=Path("outputs"))
-    parser.add_argument("--report", type=Path, help="JSON report path; defaults to output-dir/benchmark-report.json.")
     parser.add_argument("--format", choices=("WAV", "MP3"), default="WAV")
     parser.add_argument("--pitch", type=int, default=0, help="RVC semitone shift.")
     parser.add_argument("--device", choices=("cpu", "auto", "cuda"), default="cpu")
@@ -202,12 +185,7 @@ def main(argv: list[str] | None = None) -> int:
     if not args.model.is_file():
         raise SystemExit(f"RVC model does not exist: {args.model}")
     args.output_dir.mkdir(parents=True, exist_ok=True)
-    try:
-        report_path = _resolve_report_path(
-            args.output_dir, args.report or Path("benchmark-report.json")
-        )
-    except ValueError as exc:
-        raise SystemExit(str(exc)) from exc
+    report_path = args.output_dir.resolve() / "benchmark-report.json"
     duration = _audio_duration(args.input)
     system = _system_metadata()
     sampler = ProcessTreeMemorySampler(args.sample_interval_ms)
@@ -226,7 +204,6 @@ def main(argv: list[str] | None = None) -> int:
             demucs_device=args.device,
             demucs_segment=args.demucs_segment,
             demucs_timeout=args.demucs_timeout,
-            timing_report_path=report_path,
         )
     except Exception as exc:
         exit_code = 1
@@ -249,7 +226,7 @@ def main(argv: list[str] | None = None) -> int:
             ),
             "memory": sampler.as_dict(),
         }
-        _write_report(args.output_dir, report_path, report)
+        report_path = _write_report(args.output_dir, report)
     else:
         print("Timing report was not created; inspect the pipeline error.", file=sys.stderr)
         return 1
