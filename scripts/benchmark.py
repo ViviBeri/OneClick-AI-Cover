@@ -10,9 +10,12 @@ import argparse
 import json
 import platform
 import sys
+import os
+import tempfile
 import threading
 import time
 from pathlib import Path
+from uuid import uuid4
 from typing import Any
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -185,7 +188,10 @@ def main(argv: list[str] | None = None) -> int:
     if not args.model.is_file():
         raise SystemExit(f"RVC model does not exist: {args.model}")
     args.output_dir.mkdir(parents=True, exist_ok=True)
-    report_path = args.output_dir.resolve() / "benchmark-report.json"
+    run_output_dir = args.output_dir.resolve() / f"run_{uuid4().hex}"
+    run_output_dir.mkdir(parents=True, exist_ok=False)
+    report_path = run_output_dir / "benchmark-report.json"
+    timing_dir = run_output_dir / "diagnostics"
     duration = _audio_duration(args.input)
     system = _system_metadata()
     sampler = ProcessTreeMemorySampler(args.sample_interval_ms)
@@ -200,7 +206,7 @@ def main(argv: list[str] | None = None) -> int:
             1.0,
             0.85,
             args.format,
-            args.output_dir,
+            run_output_dir,
             demucs_device=args.device,
             demucs_segment=args.demucs_segment,
             demucs_timeout=args.demucs_timeout,
@@ -214,8 +220,9 @@ def main(argv: list[str] | None = None) -> int:
     finally:
         sampler.stop()
 
-    if report_path.is_file():
-        report = json.loads(report_path.read_text(encoding="utf-8"))
+    timing_reports = sorted(timing_dir.glob("*.timings.json"))
+    if len(timing_reports) == 1:
+        report = json.loads(timing_reports[0].read_text(encoding="utf-8"))
         report["benchmark"] = {
             "system": system,
             "audio_duration_seconds": duration,
