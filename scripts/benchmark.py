@@ -145,6 +145,17 @@ def _audio_duration(path: Path) -> float | None:
         return None
 
 
+def _resolve_report_path(output_root: Path, requested_path: Path) -> Path:
+    root = output_root.resolve()
+    candidate = requested_path if requested_path.is_absolute() else root / requested_path
+    resolved = candidate.resolve()
+    try:
+        resolved.relative_to(root)
+    except ValueError as exc:
+        raise ValueError("Benchmark report path must stay inside the output directory.") from exc
+    return resolved
+
+
 def _write_report(
     output_root: Path, requested_path: Path, report: dict[str, object]
 ) -> None:
@@ -191,7 +202,12 @@ def main(argv: list[str] | None = None) -> int:
     if not args.model.is_file():
         raise SystemExit(f"RVC model does not exist: {args.model}")
     args.output_dir.mkdir(parents=True, exist_ok=True)
-    report_path = args.report or args.output_dir / "benchmark-report.json"
+    try:
+        report_path = _resolve_report_path(
+            args.output_dir, args.report or Path("benchmark-report.json")
+        )
+    except ValueError as exc:
+        raise SystemExit(str(exc)) from exc
     duration = _audio_duration(args.input)
     system = _system_metadata()
     sampler = ProcessTreeMemorySampler(args.sample_interval_ms)
