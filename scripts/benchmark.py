@@ -145,7 +145,16 @@ def _audio_duration(path: Path) -> float | None:
         return None
 
 
-def _write_report(path: Path, report: dict[str, object]) -> None:
+def _write_report(
+    output_root: Path, requested_path: Path, report: dict[str, object]
+) -> None:
+    root = output_root.resolve()
+    path = requested_path.resolve()
+    try:
+        path.relative_to(root)
+    except ValueError as exc:
+        raise ValueError("Benchmark report path must stay inside the output directory.") from exc
+
     path.parent.mkdir(parents=True, exist_ok=True)
     temporary = path.with_name(f".{path.name}.tmp")
     try:
@@ -224,7 +233,7 @@ def main(argv: list[str] | None = None) -> int:
             ),
             "memory": sampler.as_dict(),
         }
-        _write_report(report_path, report)
+        _write_report(args.output_dir, report_path, report)
     else:
         print("Timing report was not created; inspect the pipeline error.", file=sys.stderr)
         return 1
