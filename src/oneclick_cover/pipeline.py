@@ -2,10 +2,16 @@
 
 from __future__ import annotations
 
+import json
+import os
 import shutil
 import tempfile
+import time
+import warnings
+from datetime import datetime, timezone
 from pathlib import Path
-from typing import Callable
+from typing import Callable, TypeVar
+from uuid import uuid4
 
 import soundfile as sf
 
@@ -15,6 +21,30 @@ from oneclick_cover.separation_backends import get_separation_backend
 from oneclick_cover.validation import validate_audio_file, validate_voice_model
 
 ProgressCallback = Callable[[float, str], None]
+Result = TypeVar("Result")
+
+
+def _write_timing_report(
+    output_root: Path, run_id: str, report: dict[str, object]
+) -> None:
+    """Atomically write to a fixed diagnostics path under the output directory."""
+    root = output_root.resolve()
+    path = root / "diagnostics" / f"{run_id}.timings.json"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    descriptor, temporary_name = tempfile.mkstemp(
+        prefix=f".{path.name}.",
+        suffix=".tmp",
+        dir=path.parent,
+    )
+    temporary = Path(temporary_name)
+    try:
+        with os.fdopen(descriptor, "w", encoding="utf-8") as stream:
+            stream.write(
+                json.dumps(report, ensure_ascii=True, indent=2, sort_keys=True) + "\n"
+            )
+        temporary.replace(path)
+    finally:
+        temporary.unlink(missing_ok=True)
 
 
 def prepare_demucs_input(
@@ -72,23 +102,39 @@ def run_cover_pipeline(
     validate_audio_fn=validate_audio_file,
     validate_model_fn=validate_voice_model,
 ) -> Path:
-    """Run the complete local pipeline without depending on Gradio or UI state."""
+    """Run the local pipeline and persist path-free per-stage wall-clock timings."""
     source = Path(song)
     voice_model = Path(model_path)
     destination_root = Path(output_dir)
+    run_id = uuid4().hex
+    started_at = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+    started = time.perf_counter()
+    timings: dict[str, float] = {}
     job_dir: Path | None = None
+    status = "failed"
+    failure_type: str | None = None
 
     def report(fraction: float, message: str) -> None:
         if progress is not None:
             progress(min(1.0, max(0.0, float(fraction))), message)
 
+    def timed(stage: str, operation: Callable[[], Result]) -> Result:
+        stage_started = time.perf_counter()
+        try:
+            return operation()
+        finally:
+            timings[stage] = round(time.perf_counter() - stage_started, 6)
+
     try:
-        validate_audio_fn(source)
-        validate_model_fn(voice_model)
-        job_dir = Path(tempfile.mkdtemp(prefix="cover_", dir=destination_root))
+        timed("validate_audio", lambda: validate_audio_fn(source))
+        timed("validate_voice_model", lambda: validate_model_fn(voice_model))
+        job_dir = Path(tempfile.mkdtemp(prefix=f"cover_{run_id[:8]}_", dir=destination_root))
 
         report(0.1, "Preparing audio")
-        wav = prepare_demucs_input(source, job_dir / "input.wav", transcode_fn)
+        wav = timed(
+            "prepare_audio",
+            lambda: prepare_demucs_input(source, job_dir / "input.wav", transcode_fn),
+        )
         if wav == source:
             report(0.1, "Reusing compatible 44.1 kHz stereo WAV")
 
@@ -99,39 +145,91 @@ def run_cover_pipeline(
 
         backend = get_separation_backend(separation_backend)
         separator = separate_fn or backend.separate
-        vocals, instrumental = separator(
-            wav,
-            job_dir,
-            progress=separation_progress,
-            device=demucs_device,
-            segment=float(demucs_segment),
-            timeout=float(demucs_timeout),
+        vocals, instrumental = timed(
+            "separate",
+            lambda: separator(
+                wav,
+                job_dir,
+                progress=separation_progress,
+                device=demucs_device,
+                segment=float(demucs_segment),
+                timeout=float(demucs_timeout),
+            ),
         )
 
         report(0.6, "Converting voice")
         converted = job_dir / "converted.wav"
-        convert_fn(vocals, converted, voice_model, int(pitch))
+        timed(
+            "convert",
+            lambda: convert_fn(vocals, converted, voice_model, int(pitch)),
+        )
 
         report(0.85, "Mixing")
         output = job_dir / "cover.wav"
-        converted = match_sample_rate_fn(
-            converted, instrumental, job_dir / "converted_matched.wav"
+        converted = timed(
+            "match_sample_rate",
+            lambda: match_sample_rate_fn(
+                converted, instrumental, job_dir / "converted_matched.wav"
+            ),
         )
-        mix_fn(converted, instrumental, output, float(vocal_gain), float(instrumental_gain))
+        timed(
+            "mix",
+            lambda: mix_fn(
+                converted,
+                instrumental,
+                output,
+                float(vocal_gain),
+                float(instrumental_gain),
+            ),
+        )
 
         if output_format == "MP3":
             mp3 = job_dir / "cover.mp3"
-            export_mp3_fn(output, mp3)
+            timed("export_mp3", lambda: export_mp3_fn(output, mp3))
             output = mp3
         elif output_format != "WAV":
             raise ValueError("Output format must be WAV or MP3.")
 
-        if not output.is_file() or output.stat().st_size == 0:
-            raise RuntimeError("The cover pipeline completed without a usable output file.")
-
+        timed(
+            "validate_output",
+            lambda: _require_nonempty_output(output),
+        )
         report(1.0, "Done")
+        status = "completed"
         return output
-    except Exception:
+    except Exception as exc:
+        failure_type = type(exc).__name__
         if job_dir is not None:
             shutil.rmtree(job_dir, ignore_errors=True)
         raise
+    finally:
+        timing_report: dict[str, object] = {
+            "schema_version": 1,
+            "run_id": run_id,
+            "status": status,
+            "started_at_utc": started_at,
+            "total_wall_seconds": round(time.perf_counter() - started, 6),
+            "stages_seconds": timings,
+            "configuration": {
+                "output_format": str(output_format),
+                "separation_backend": str(separation_backend),
+                "demucs_device": str(demucs_device),
+                "demucs_segment": str(demucs_segment),
+            },
+        }
+        if failure_type is not None:
+            timing_report["failure_type"] = failure_type
+        try:
+            _write_timing_report(destination_root, run_id, timing_report)
+        except OSError as exc:
+            warnings.warn(
+                f"Could not write pipeline timing report ({type(exc).__name__}).",
+                RuntimeWarning,
+                stacklevel=2,
+            )
+
+
+def _require_nonempty_output(path: Path) -> None:
+    """Reject missing or empty pipeline output files."""
+    if not path.is_file() or path.stat().st_size == 0:
+        raise RuntimeError("The cover pipeline completed without a usable output file.")

@@ -137,6 +137,7 @@ This remains an advanced, partly manual workflow. The [voice-training guide](doc
 
 - [Installation and troubleshooting](docs/troubleshooting.md)
 - [Verification checklist](docs/verification.md)
+- [Performance measurement and benchmarking](docs/PERFORMANCE.md)
 
 </details>
 
