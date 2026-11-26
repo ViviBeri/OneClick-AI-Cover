@@ -1,11 +1,10 @@
 from __future__ import annotations
 
 import sys
-from pathlib import Path
 
 import pytest
 
-from scripts.benchmark import ProcessTreeMemorySampler, _resolve_report_path
+from scripts.benchmark import ProcessTreeMemorySampler, _write_report
 
 
 def test_memory_sampler_degrades_when_psutil_is_not_installed(monkeypatch):
@@ -25,11 +24,8 @@ def test_memory_sampler_rejects_unreasonable_sampling_interval():
         ProcessTreeMemorySampler(interval_ms=5)
 
 
-def test_benchmark_report_path_is_confined_to_output_directory(tmp_path):
-    output_root = tmp_path / "outputs"
+def test_benchmark_report_uses_fixed_output_location(tmp_path):
+    report_path = _write_report(tmp_path / "outputs", {"schema_version": 1})
 
-    safe_path = _resolve_report_path(output_root, Path("reports/result.json"))
-    assert safe_path == output_root.resolve() / "reports" / "result.json"
-
-    with pytest.raises(ValueError, match="inside the output directory"):
-        _resolve_report_path(output_root, Path("../outside.json"))
+    assert report_path == (tmp_path / "outputs").resolve() / "benchmark-report.json"
+    assert report_path.is_file()
