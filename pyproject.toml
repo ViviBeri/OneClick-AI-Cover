@@ -20,6 +20,9 @@ dependencies = [
   "huggingface-hub>=0.27,<1",
 ]
 
+[project.optional-dependencies]
+benchmark = ["psutil>=6,<8"]
+
 [[tool.uv.index]]
 name = "pytorch-cpu"
 url = "https://download.pytorch.org/whl/cpu"
