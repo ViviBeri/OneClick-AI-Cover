@@ -97,7 +97,7 @@ class ProcessTreeMemorySampler:
         if self._process is None:
             return {
                 "available": False,
-                "reason": 'Install the optional dependency with python -m pip install -e ".[benchmark]".',
+                "reason": 'psutil is not installed. Install the optional dependency with python -m pip install -e ".[benchmark]".',
             }
         return {
             "available": True,
