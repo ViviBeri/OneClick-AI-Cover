@@ -8,15 +8,15 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import platform
 import sys
-import os
 import tempfile
 import threading
 import time
 from pathlib import Path
-from uuid import uuid4
 from typing import Any
+from uuid import uuid4
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
@@ -153,12 +153,17 @@ def _write_report(output_root: Path, report: dict[str, object]) -> Path:
     root = output_root.resolve()
     path = root / "benchmark-report.json"
     path.parent.mkdir(parents=True, exist_ok=True)
-    temporary = path.with_name(".benchmark-report.json.tmp")
+    descriptor, temporary_name = tempfile.mkstemp(
+        prefix=".benchmark-report.",
+        suffix=".tmp",
+        dir=root,
+    )
+    temporary = Path(temporary_name)
     try:
-        temporary.write_text(
-            json.dumps(report, ensure_ascii=True, indent=2, sort_keys=True) + "\\n",
-            encoding="utf-8",
-        )
+        with os.fdopen(descriptor, "w", encoding="utf-8") as stream:
+            stream.write(
+                json.dumps(report, ensure_ascii=True, indent=2, sort_keys=True) + "\n"
+            )
         temporary.replace(path)
     finally:
         temporary.unlink(missing_ok=True)
@@ -233,7 +238,7 @@ def main(argv: list[str] | None = None) -> int:
             ),
             "memory": sampler.as_dict(),
         }
-        report_path = _write_report(args.output_dir, report)
+        report_path = _write_report(run_output_dir, report)
     else:
         print("Timing report was not created; inspect the pipeline error.", file=sys.stderr)
         return 1
