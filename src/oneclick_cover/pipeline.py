@@ -24,16 +24,11 @@ Result = TypeVar("Result")
 
 
 def _write_timing_report(
-    output_root: Path, requested_path: Path, report: dict[str, object]
+    output_root: Path, run_id: str, report: dict[str, object]
 ) -> None:
-    """Atomically write a report only beneath the configured output directory."""
+    """Atomically write to a fixed diagnostics path under the output directory."""
     root = output_root.resolve()
-    path = requested_path.resolve()
-    try:
-        path.relative_to(root)
-    except ValueError as exc:
-        raise ValueError("Timing report path must stay inside the output directory.") from exc
-
+    path = root / "diagnostics" / f"{run_id}.timings.json"
     path.parent.mkdir(parents=True, exist_ok=True)
     temporary = path.with_name(f".{path.name}.{uuid4().hex}.tmp")
     try:
@@ -100,18 +95,12 @@ def run_cover_pipeline(
     export_mp3_fn=export_mp3,
     validate_audio_fn=validate_audio_file,
     validate_model_fn=validate_voice_model,
-    timing_report_path: str | Path | None = None,
 ) -> Path:
     """Run the local pipeline and persist path-free per-stage wall-clock timings."""
     source = Path(song)
     voice_model = Path(model_path)
     destination_root = Path(output_dir)
     run_id = uuid4().hex
-    report_path = (
-        Path(timing_report_path)
-        if timing_report_path is not None
-        else destination_root / "diagnostics" / f"{run_id}.timings.json"
-    )
     started_at = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
     started = time.perf_counter()
     timings: dict[str, float] = {}
@@ -225,8 +214,8 @@ def run_cover_pipeline(
         if failure_type is not None:
             timing_report["failure_type"] = failure_type
         try:
-            _write_timing_report(destination_root, report_path, timing_report)
-        except (OSError, ValueError) as exc:
+            _write_timing_report(destination_root, run_id, timing_report)
+        except OSError as exc:
             warnings.warn(
                 f"Could not write pipeline timing report ({type(exc).__name__}).",
                 RuntimeWarning,
