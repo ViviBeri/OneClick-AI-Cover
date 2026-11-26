@@ -30,8 +30,8 @@ Every pipeline run writes a path-free JSON timing report under
 
 The report does not contain audio, model bytes, input paths, model paths, or
 exception messages. Failed runs retain their timing report even though the
-temporary job directory is cleaned up. Callers can supply
-`timing_report_path` to write the report to a different location.
+temporary job directory is cleaned up. Reports are written to a fixed
+`diagnostics/` location beneath the configured output directory.
 
 ## Reproducible benchmark runner
 
