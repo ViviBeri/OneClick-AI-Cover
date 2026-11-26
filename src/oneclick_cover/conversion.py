@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 import os
+import shutil
 import subprocess
+import tempfile
 from pathlib import Path
 
 import soundfile as sf
@@ -60,42 +62,47 @@ def convert_voice_batch(
     if existing:
         raise FileExistsError(f"Batch output already exists: {existing[0]}")
 
-    command = [
-        str(backend_python),
-        str(cli),
-        "--model",
-        str(model),
-        "--input",
-        str(inputs[0].parent),
-        "--output",
-        str(destination),
-        "--pitch",
-        str(int(pitch)),
-        "--f0-method",
-        "rmvpe",
-        "--index-rate",
-        str(rate),
-        "--format",
-        "wav",
-    ]
-    if selected_index is not None and rate > 0:
-        command.extend(["--index", str(selected_index)])
-    env = os.environ.copy()
-    env.setdefault("HF_HUB_DISABLE_TELEMETRY", "1")
-    result = subprocess.run(
-        command,
-        cwd=str(RVC_ROOT),
-        env=env,
-        capture_output=True,
-        text=True,
-        check=False,
-    )
-    if result.returncode:
-        details = (result.stderr or result.stdout or "No diagnostic output")[-5000:]
-        raise RuntimeError(
-            "RVC batch voice conversion failed. Check model compatibility and HuBERT/RMVPE assets.\\n\\n"
-            + details
+    with tempfile.TemporaryDirectory(prefix=".rvc-batch-", dir=destination) as temp_name:
+        input_dir = Path(temp_name)
+        for source in inputs:
+            shutil.copy2(source, input_dir / source.name)
+
+        command = [
+            str(backend_python),
+            str(cli),
+            "--model",
+            str(model),
+            "--input",
+            str(input_dir),
+            "--output",
+            str(destination),
+            "--pitch",
+            str(int(pitch)),
+            "--f0-method",
+            "rmvpe",
+            "--index-rate",
+            str(rate),
+            "--format",
+            "wav",
+        ]
+        if selected_index is not None and rate > 0:
+            command.extend(["--index", str(selected_index)])
+        env = os.environ.copy()
+        env.setdefault("HF_HUB_DISABLE_TELEMETRY", "1")
+        result = subprocess.run(
+            command,
+            cwd=str(RVC_ROOT),
+            env=env,
+            capture_output=True,
+            text=True,
+            check=False,
         )
+        if result.returncode:
+            details = (result.stderr or result.stdout or "No diagnostic output")[-5000:]
+            raise RuntimeError(
+                "RVC batch voice conversion failed. Check model compatibility and HuBERT/RMVPE assets.\\n\\n"
+                + details
+            )
 
     for source, output in outputs.items():
         if not output.is_file() or output.stat().st_size == 0:
