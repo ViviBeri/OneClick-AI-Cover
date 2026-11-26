@@ -23,8 +23,17 @@ ProgressCallback = Callable[[float, str], None]
 Result = TypeVar("Result")
 
 
-def _write_timing_report(path: Path, report: dict[str, object]) -> None:
-    """Atomically write a timing report without including private file paths."""
+def _write_timing_report(
+    output_root: Path, requested_path: Path, report: dict[str, object]
+) -> None:
+    """Atomically write a report only beneath the configured output directory."""
+    root = output_root.resolve()
+    path = requested_path.resolve()
+    try:
+        path.relative_to(root)
+    except ValueError as exc:
+        raise ValueError("Timing report path must stay inside the output directory.") from exc
+
     path.parent.mkdir(parents=True, exist_ok=True)
     temporary = path.with_name(f".{path.name}.{uuid4().hex}.tmp")
     try:
@@ -216,8 +225,8 @@ def run_cover_pipeline(
         if failure_type is not None:
             timing_report["failure_type"] = failure_type
         try:
-            _write_timing_report(report_path, timing_report)
-        except OSError as exc:
+            _write_timing_report(destination_root, report_path, timing_report)
+        except (OSError, ValueError) as exc:
             warnings.warn(
                 f"Could not write pipeline timing report ({type(exc).__name__}).",
                 RuntimeWarning,
