@@ -11,7 +11,7 @@ import json
 import os
 import re
 import tempfile
-from dataclasses import asdict, dataclass
+from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Literal
@@ -72,7 +72,7 @@ def _fsync_directory(directory: Path) -> None:
     if os.name == "nt":
         kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
         create_file = kernel32.CreateFileW
-        create_file.restype = ctypes.c_void_p
+        create_file.restype = ctypes.c_void_p\n        create_file.argtypes = [ctypes.c_wchar_p, ctypes.c_uint32, ctypes.c_uint32, ctypes.c_void_p, ctypes.c_uint32, ctypes.c_uint32, ctypes.c_void_p]\n        kernel32.FlushFileBuffers.argtypes = [ctypes.c_void_p]\n        kernel32.CloseHandle.argtypes = [ctypes.c_void_p]
         handle = create_file(
             str(directory), 0x80000000, 0x00000007, None, 3, 0x02000000, None
         )
