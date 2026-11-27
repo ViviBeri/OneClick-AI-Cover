@@ -3,7 +3,9 @@ import json
 from oneclick_cover.batch_contracts import (
     MANIFEST_NAME,
     BatchProgressEvent,
-    read_completion_manifest,\n    mark_cleanup_pending,\n    sweep_stale_staging,
+    read_completion_manifest,
+    mark_cleanup_pending,
+    sweep_stale_staging,
     write_completion_manifest,
 )
 
