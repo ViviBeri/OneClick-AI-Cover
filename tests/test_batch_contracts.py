@@ -119,6 +119,12 @@ def test_staging_sweep_preserves_recent_unmarked_and_completed_directories(tmp_p
     recent.mkdir()
     mark_cleanup_pending(recent)
 
+    future = tmp_path / ".oneclick-batch-future"
+    future.mkdir()
+    mark_cleanup_pending(future)
+    future_time = datetime.now(timezone.utc) + timedelta(hours=2)
+    os.utime(future, (future_time.timestamp(), future_time.timestamp()))
+
     unmarked = tmp_path / ".oneclick-batch-unmarked"
     unmarked.mkdir()
     (unmarked / "partial.wav").write_bytes(b"partial")
@@ -131,12 +137,12 @@ def test_staging_sweep_preserves_recent_unmarked_and_completed_directories(tmp_p
     )
     mark_cleanup_pending(completed)
 
-    removed = sweep_stale_staging(
-        tmp_path, older_than=datetime.now(timezone.utc) + timedelta(hours=1)
-    )
+    cutoff = datetime.now(timezone.utc) - timedelta(hours=24)
+    removed = sweep_stale_staging(tmp_path, older_than=cutoff)
 
     assert removed == ()
     assert recent.exists()
+    assert future.exists()
     assert unmarked.exists()
     assert completed.exists()
     assert read_completion_manifest(
