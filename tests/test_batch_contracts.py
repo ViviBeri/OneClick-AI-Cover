@@ -1,10 +1,14 @@
 import json
+import os
+from datetime import datetime, timedelta, timezone
+
+import pytest
 
 from oneclick_cover.batch_contracts import (
     MANIFEST_NAME,
     BatchProgressEvent,
-    read_completion_manifest,
     mark_cleanup_pending,
+    read_completion_manifest,
     sweep_stale_staging,
     write_completion_manifest,
 )
@@ -83,8 +87,6 @@ def test_progress_event_schema_validates_track_and_error_contract():
     )
     assert event.event == "started"
 
-    import pytest
-
     with pytest.raises(ValueError, match="error code"):
         BatchProgressEvent(
             batch_id="batch-5",
@@ -96,11 +98,7 @@ def test_progress_event_schema_validates_track_and_error_contract():
         )
 
 
-
 def test_cleanup_pending_staging_is_removed_only_after_24_hours(tmp_path):
-    from datetime import datetime, timedelta, timezone
-    import os
-
     staging = tmp_path / ".oneclick-batch-abandoned"
     staging.mkdir()
     (staging / "partial.wav").write_bytes(b"partial")
@@ -117,8 +115,6 @@ def test_cleanup_pending_staging_is_removed_only_after_24_hours(tmp_path):
 
 
 def test_staging_sweep_preserves_recent_unmarked_and_completed_directories(tmp_path):
-    from datetime import datetime, timedelta, timezone
-
     recent = tmp_path / ".oneclick-batch-recent"
     recent.mkdir()
     mark_cleanup_pending(recent)
