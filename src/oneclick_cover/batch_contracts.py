@@ -120,7 +120,7 @@ def write_completion_manifest(
         "files": [{"name": name, "sha256": digest} for name, digest in entries],
     }
     payload["self_sha256"] = hashlib.sha256(_canonical_json(payload)).hexdigest()
-    encoded = _canonical_json(payload) + b"\\n"
+    encoded = _canonical_json(payload) + bytes([10])
     descriptor, temporary_name = tempfile.mkstemp(
         prefix=".complete-", suffix=".tmp", dir=root
     )
