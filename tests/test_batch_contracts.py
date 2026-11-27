@@ -3,7 +3,7 @@ import json
 from oneclick_cover.batch_contracts import (
     MANIFEST_NAME,
     BatchProgressEvent,
-    read_completion_manifest,
+    read_completion_manifest,\n    mark_cleanup_pending,\n    sweep_stale_staging,
     write_completion_manifest,
 )
 
@@ -92,3 +92,55 @@ def test_progress_event_schema_validates_track_and_error_contract():
             event="failed",
             timestamp_ms=1234,
         )
+
+
+
+def test_cleanup_pending_staging_is_removed_only_after_24_hours(tmp_path):
+    from datetime import datetime, timedelta, timezone
+    import os
+
+    staging = tmp_path / ".oneclick-batch-abandoned"
+    staging.mkdir()
+    (staging / "partial.wav").write_bytes(b"partial")
+    mark_cleanup_pending(staging)
+    old = datetime.now(timezone.utc) - timedelta(hours=25)
+    os.utime(staging, (old.timestamp(), old.timestamp()))
+
+    removed = sweep_stale_staging(
+        tmp_path, older_than=datetime.now(timezone.utc) - timedelta(hours=24)
+    )
+
+    assert removed == (staging,)
+    assert not staging.exists()
+
+
+def test_staging_sweep_preserves_recent_unmarked_and_completed_directories(tmp_path):
+    from datetime import datetime, timedelta, timezone
+
+    recent = tmp_path / ".oneclick-batch-recent"
+    recent.mkdir()
+    mark_cleanup_pending(recent)
+
+    unmarked = tmp_path / ".oneclick-batch-unmarked"
+    unmarked.mkdir()
+    (unmarked / "partial.wav").write_bytes(b"partial")
+
+    completed = tmp_path / ".oneclick-batch-completed"
+    completed.mkdir()
+    (completed / "track.wav").write_bytes(b"audio")
+    write_completion_manifest(
+        completed, batch_id="done", engine_identity="rvc@pinned-sha"
+    )
+    mark_cleanup_pending(completed)
+
+    removed = sweep_stale_staging(
+        tmp_path, older_than=datetime.now(timezone.utc) + timedelta(hours=1)
+    )
+
+    assert removed == ()
+    assert recent.exists()
+    assert unmarked.exists()
+    assert completed.exists()
+    assert read_completion_manifest(
+        completed, expected_engine_identity="rvc@pinned-sha"
+    ) is not None
