@@ -1,11 +1,10 @@
-"""Transactional batch publication contracts for M2.2a.
+""""Transactional batch publication contracts for M2.2a.
 
 A batch is complete only when its self-validating manifest is durable and
 matches every file in the published directory.
 """
 from __future__ import annotations
 
-import ctypes
 import hashlib
 import json
 import os
@@ -69,33 +68,13 @@ def _canonical_json(value: dict[str, object]) -> bytes:
 
 
 def _fsync_directory(directory: Path) -> None:
-    """Flush directory metadata on POSIX and Windows before publishing state."""
+    """Sync directory metadata where supported.
+
+    Windows does not provide a supported directory-handle FlushFileBuffers
+    operation. Files are flushed individually before publication; Windows
+    directory metadata durability relies on filesystem journaling.
+    """
     if os.name == "nt":
-        kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
-        create_file = kernel32.CreateFileW
-        create_file.restype = ctypes.c_void_p
-        create_file.argtypes = [
-            ctypes.c_wchar_p,
-            ctypes.c_uint32,
-            ctypes.c_uint32,
-            ctypes.c_void_p,
-            ctypes.c_uint32,
-            ctypes.c_uint32,
-            ctypes.c_void_p,
-        ]
-        kernel32.FlushFileBuffers.argtypes = [ctypes.c_void_p]
-        kernel32.CloseHandle.argtypes = [ctypes.c_void_p]
-        handle = create_file(
-            str(directory), 0x80000000, 0x00000007, None, 3, 0x02000000, None
-        )
-        invalid = ctypes.c_void_p(-1).value
-        if handle == invalid:
-            raise OSError(ctypes.get_last_error(), "Unable to open directory for flush")
-        try:
-            if not kernel32.FlushFileBuffers(handle):
-                raise OSError(ctypes.get_last_error(), "Unable to flush directory metadata")
-        finally:
-            kernel32.CloseHandle(handle)
         return
     descriptor = os.open(directory, os.O_RDONLY)
     try:
@@ -218,7 +197,6 @@ def mark_cleanup_pending(staging_directory: Path) -> None:
         stream.flush()
         os.fsync(stream.fileno())
     _fsync_directory(Path(staging_directory))
-
 
 
 def sweep_stale_staging(
