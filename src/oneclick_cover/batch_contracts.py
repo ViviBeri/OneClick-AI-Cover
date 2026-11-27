@@ -206,3 +206,35 @@ def mark_cleanup_pending(staging_directory: Path) -> None:
         stream.flush()
         os.fsync(stream.fileno())
     _fsync_directory(Path(staging_directory))
+
+
+
+def sweep_stale_staging(
+    staging_root: Path,
+    *,
+    older_than: datetime | None = None,
+) -> tuple[Path, ...]:
+    """Remove only old, app-owned staging directories explicitly marked pending."""
+    root = Path(staging_root)
+    cutoff = older_than or (datetime.now(timezone.utc) - timedelta(hours=24))
+    if not root.is_dir():
+        return ()
+    removed: list[Path] = []
+    for candidate in root.iterdir():
+        if (
+            not candidate.is_dir()
+            or not candidate.name.startswith(STAGING_PREFIX)
+            or not (candidate / ".cleanup_pending").is_file()
+        ):
+            continue
+        modified = datetime.fromtimestamp(
+            candidate.stat().st_mtime, tz=timezone.utc
+        )
+        if modified >= cutoff:
+            continue
+        # A valid completion marker makes this directory non-disposable.
+        if (candidate / MANIFEST_NAME).exists():
+            continue
+        shutil.rmtree(candidate)
+        removed.append(candidate)
+    return tuple(removed)
