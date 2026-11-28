@@ -236,6 +236,13 @@ def test_manifest_writer_and_reader_use_shared_canonicalizer(monkeypatch, tmp_pa
     parsed = json.loads(written_payload_bytes.decode("utf-8"))
     original_self_hash = parsed.pop("self_sha256")
 
+    # Reader call 3 rebuilds the payload after parsing and removing
+    # self_sha256; run it before asserting the recorded canonicalizer calls.
+    loaded = read_completion_manifest(
+        tmp_path, expected_engine_identity="rvc@pinned-sha"
+    )
+    assert loaded.batch_id == "shared"
+
     # Writer call 1 hashes the payload before self_sha256 is inserted.
     # Writer call 2 serializes the complete payload. Reader call 3 rebuilds
     # the payload after parsing and removing self_sha256.
@@ -243,7 +250,3 @@ def test_manifest_writer_and_reader_use_shared_canonicalizer(monkeypatch, tmp_pa
     assert canonical_calls[1] == written_payload_bytes
     assert canonical_calls[0] == canonical_calls[2]
     assert hashlib.sha256(canonical_calls[2]).hexdigest() == original_self_hash
-
-    read_completion_manifest(
-        tmp_path, expected_engine_identity="rvc@pinned-sha"
-    )
