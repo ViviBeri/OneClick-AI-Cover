@@ -201,21 +201,33 @@ def test_legacy_json_dumps_manifest_is_rejected_by_jcs_reader(tmp_path):
 
 def test_manifest_writer_and_reader_use_shared_canonicalizer(monkeypatch, tmp_path):
     (tmp_path / "one.wav").write_bytes(b"audio")
-    calls = []
+    canonical_calls = []
     original = canonicalization.canonicalize
 
     def recording_canonicalize(value):
         encoded = original(value)
-        calls.append(encoded)
+        canonical_calls.append(encoded)
         return encoded
 
     monkeypatch.setattr(canonicalization, "canonicalize", recording_canonicalize)
     write_completion_manifest(
         tmp_path, batch_id="shared", engine_identity="rvc@pinned-sha"
     )
+
+    marker_bytes = (tmp_path / MANIFEST_NAME).read_bytes()
+    assert marker_bytes.endswith(b"\\n")
+    written_payload_bytes = marker_bytes[:-1]
+    parsed = json.loads(written_payload_bytes.decode("utf-8"))
+    original_self_hash = parsed.pop("self_sha256")
+
+    # Writer call 1 hashes the payload before self_sha256 is inserted.
+    # Writer call 2 serializes the complete payload. Reader call 3 rebuilds
+    # the payload after parsing and removing self_sha256.
+    assert len(canonical_calls) == 3
+    assert canonical_calls[1] == written_payload_bytes
+    assert canonical_calls[0] == canonical_calls[2]
+    assert hashlib.sha256(canonical_calls[2]).hexdigest() == original_self_hash
+
     read_completion_manifest(
         tmp_path, expected_engine_identity="rvc@pinned-sha"
     )
-    assert len(calls) == 3
-    assert calls[0] == calls[2]
-    assert calls[1] != calls[0]

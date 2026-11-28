@@ -130,7 +130,7 @@ def write_completion_manifest(
         "files": [{"name": name, "sha256": digest} for name, digest in entries],
     }
     payload["self_sha256"] = hashlib.sha256(canonicalization.canonicalize(payload)).hexdigest()
-    encoded = canonicalize(payload) + bytes([10])
+    encoded = canonicalization.canonicalize(payload) + bytes([10])
     descriptor, temporary_name = tempfile.mkstemp(
         prefix=".complete-", suffix=".tmp", dir=root
     )
@@ -242,7 +242,7 @@ def _has_valid_completion_manifest(directory: Path) -> bool:
                 directory, expected_engine_identity=engine_identity
             ) is not None
         )
-    except (OSError, UnicodeError, ManifestValidationError, TypeError):
+    except (OSError, UnicodeError, json.JSONDecodeError, ManifestValidationError, TypeError):
         return False
 
 
