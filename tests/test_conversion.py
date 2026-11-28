@@ -344,3 +344,79 @@ def test_conversion_rejects_out_of_range_index_strength(monkeypatch, tmp_path):
         conversion.convert_voice(
             source, tmp_path / "out.wav", model, index_path=index, index_rate=1.2
         )
+
+
+
+def test_batch_conversion_reuses_one_rvc_process_and_validates_outputs(
+    monkeypatch, tmp_path
+):
+    import numpy as np
+    import soundfile as sf
+
+    backend = tmp_path / "rvc"
+    (backend / "infer").mkdir(parents=True)
+    (backend / "infer" / "cli.py").write_text("# test stub", encoding="utf-8")
+    python = backend / ".venv" / "Scripts" / "python.exe"
+    python.parent.mkdir(parents=True)
+    python.write_text("", encoding="utf-8")
+    model = tmp_path / "voice.pth"
+    model.write_bytes(b"model")
+    source_dir = tmp_path / "vocals"
+    source_dir.mkdir()
+    vocals = []
+    for name in ("track-one.wav", "track-two.wav"):
+        source = source_dir / name
+        sf.write(str(source), np.zeros((2205, 1), dtype=np.float32), 22050)
+        vocals.append(source)
+    unrelated = source_dir / "unrelated.wav"
+    sf.write(str(unrelated), np.zeros((2205, 1), dtype=np.float32), 22050)
+    output_dir = tmp_path / "converted"
+    captured = {"calls": 0}
+
+    def fake_run(command, **kwargs):
+        captured["calls"] += 1
+        input_dir = Path(command[command.index("--input") + 1])
+        output = Path(command[command.index("--output") + 1])
+        staged = sorted(path.name for path in input_dir.iterdir())
+        captured["staged"] = staged
+        for name in staged:
+            sf.write(
+                str(output / name),
+                np.zeros((2205, 1), dtype=np.float32),
+                22050,
+            )
+        captured["command"] = command
+        return SimpleNamespace(returncode=0, stderr="", stdout="")
+
+    monkeypatch.setattr(conversion, "RVC_ROOT", backend)
+    monkeypatch.setattr(conversion.subprocess, "run", fake_run)
+
+    results = conversion.convert_voice_batch(vocals, output_dir, model, pitch=2)
+
+    assert captured["calls"] == 1
+    assert captured["staged"] == ["track-one.wav", "track-two.wav"]
+    assert "--overwrite" not in captured["command"]
+    assert set(results) == set(vocals)
+    assert all(path.is_file() and sf.info(str(path)).frames == 2205 for path in results.values())
+    assert not (output_dir / "unrelated.wav").exists()
+
+
+def test_batch_conversion_rejects_duplicate_output_stems(monkeypatch, tmp_path):
+    first_dir = tmp_path / "first"
+    second_dir = tmp_path / "second"
+    first_dir.mkdir()
+    second_dir.mkdir()
+    first = first_dir / "same.wav"
+    second = second_dir / "same.flac"
+    first.write_bytes(b"audio")
+    second.write_bytes(b"audio")
+
+    def unexpected_run(*args, **kwargs):
+        raise AssertionError("RVC must not launch for colliding output names")
+
+    monkeypatch.setattr(conversion.subprocess, "run", unexpected_run)
+    import pytest
+    with pytest.raises(ValueError, match="unique stems"):
+        conversion.convert_voice_batch(
+            [first, second], tmp_path / "outputs", tmp_path / "voice.pth"
+        )

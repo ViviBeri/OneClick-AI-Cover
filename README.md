@@ -199,6 +199,8 @@ This remains an advanced, partly manual workflow. The [voice-training guide](doc
 
 ### M2 — Backend Integration & Preservation Validation
 
+**M2.2a — RVC batch inference foundation:** reuse one pinned RVC model load across an explicit batch of vocal tracks. This is a sub-milestone of M2, not a parallel R1 track. User-facing multi-song orchestration is gated on transactional publication (same-filesystem staging and a final completion manifest), no-overwrite behavior, stale-stage cleanup, per-track progress, process-tree cancellation, and real multi-song Windows listening review.
+
 - [ ] Evaluate short-reference conversion candidates against the M1 harness using the same fixed source set and metrics
 - [ ] Wire standard RVC inference through VoiceProfile(mode=trained|imported)
 - [ ] Set preservation acceptance thresholds from M1 identity-baseline and repeatability results
