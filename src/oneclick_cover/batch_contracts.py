@@ -18,9 +18,12 @@ from pathlib import Path
 from typing import Literal
 from uuid import uuid4
 
+from oneclick_cover.canonicalization import canonicalize
+
 MANIFEST_NAME = "_COMPLETE.json"
 STAGING_PREFIX = ".staging-"
 MANIFEST_VERSION = 1
+MANIFEST_CANONICALIZATION = "RFC8785"
 _HEX_SHA256 = re.compile(r"^[0-9a-f]{64}$")
 
 
@@ -47,6 +50,26 @@ class BatchProgressEvent:
             raise ValueError("Only failed progress events may include an error code.")
 
 
+class ManifestValidationError(ValueError):
+    """Base class for invalid or incompatible completion manifests."""
+
+
+class ManifestParseError(ManifestValidationError):
+    """Raised when a manifest is malformed or uses an unsupported format."""
+
+
+class SelfHashMismatch(ManifestValidationError):
+    """Raised when the manifest's own canonical digest does not match."""
+
+
+class OutputHashMismatch(ManifestValidationError):
+    """Raised when output membership or a file digest does not match."""
+
+
+class EngineIdentityMismatch(ManifestValidationError):
+    """Raised when the manifest belongs to a different conversion engine."""
+
+
 @dataclass(frozen=True)
 class BatchManifest:
     batch_id: str
@@ -60,12 +83,6 @@ def _sha256(path: Path) -> str:
         for chunk in iter(lambda: stream.read(1024 * 1024), b""):
             digest.update(chunk)
     return digest.hexdigest()
-
-
-def _canonical_json(value: dict[str, object]) -> bytes:
-    return json.dumps(
-        value, ensure_ascii=False, sort_keys=True, separators=(",", ":")
-    ).encode("utf-8")
 
 
 def _fsync_directory(directory: Path) -> None:
@@ -107,12 +124,13 @@ def write_completion_manifest(
         raise ValueError("Invalid output digest.")
     payload: dict[str, object] = {
         "version": MANIFEST_VERSION,
+        "canonicalization": MANIFEST_CANONICALIZATION,
         "batch_id": batch_id,
         "engine_identity": engine_identity,
         "files": [{"name": name, "sha256": digest} for name, digest in entries],
     }
-    payload["self_sha256"] = hashlib.sha256(_canonical_json(payload)).hexdigest()
-    encoded = _canonical_json(payload) + bytes([10])
+    payload["self_sha256"] = hashlib.sha256(canonicalize(payload)).hexdigest()
+    encoded = canonicalize(payload) + bytes([10])
     descriptor, temporary_name = tempfile.mkstemp(
         prefix=".complete-", suffix=".tmp", dir=root
     )
@@ -132,59 +150,71 @@ def write_completion_manifest(
 
 def read_completion_manifest(
     directory: Path, *, expected_engine_identity: str
-) -> BatchManifest | None:
-    """Return None for every absent, malformed, stale, or mismatched batch."""
+) -> BatchManifest:
+    """Load and validate a JCS-authenticated manifest or raise a typed error."""
     root = Path(directory)
     marker = root / MANIFEST_NAME
     try:
         raw = marker.read_bytes()
         payload = json.loads(raw.decode("utf-8"))
-        if not isinstance(payload, dict):
-            return None
-        self_digest = payload.pop("self_sha256")
-        if not isinstance(self_digest, str) or not _HEX_SHA256.fullmatch(self_digest):
-            return None
-        if hashlib.sha256(_canonical_json(payload)).hexdigest() != self_digest:
-            return None
-        if payload.get("version") != MANIFEST_VERSION:
-            return None
-        batch_id = payload.get("batch_id")
-        engine_identity = payload.get("engine_identity")
-        files = payload.get("files")
-        if not isinstance(batch_id, str) or not batch_id:
-            return None
-        if engine_identity != expected_engine_identity or not isinstance(files, list):
-            return None
-        listed: list[tuple[str, str]] = []
-        for item in files:
-            if not isinstance(item, dict):
-                return None
-            name, digest = item.get("name"), item.get("sha256")
-            if (
-                not isinstance(name, str)
-                or Path(name).name != name
-                or name in {"", MANIFEST_NAME}
-                or not isinstance(digest, str)
-                or not _HEX_SHA256.fullmatch(digest)
-            ):
-                return None
-            listed.append((name, digest))
-        if not listed or len({name for name, _ in listed}) != len(listed):
-            return None
-        actual = {
-            path.name for path in root.iterdir()
-            if path.is_file() and path.name not in {MANIFEST_NAME, ".cleanup_pending"}
-        }
-        if actual != {name for name, _ in listed}:
-            return None
-        for name, digest in listed:
-            path = root / name
-            if not path.is_file() or _sha256(path) != digest:
-                return None
-        return BatchManifest(batch_id, engine_identity, tuple(sorted(listed)))
-    except (OSError, UnicodeError, ValueError, TypeError, KeyError, json.JSONDecodeError):
-        return None
+    except (OSError, UnicodeError, json.JSONDecodeError) as error:
+        raise ManifestParseError(f"Cannot read a valid completion manifest: {error}") from error
 
+    if not isinstance(payload, dict):
+        raise ManifestParseError("Completion manifest must be a JSON object.")
+    if payload.get("canonicalization") != MANIFEST_CANONICALIZATION:
+        raise ManifestParseError("Completion manifest is not marked as RFC 8785 canonical JSON.")
+
+    self_digest = payload.pop("self_sha256", None)
+    if not isinstance(self_digest, str) or not _HEX_SHA256.fullmatch(self_digest):
+        raise ManifestParseError("Completion manifest self_sha256 is missing or malformed.")
+    try:
+        canonical_payload = canonicalize(payload)
+    except (TypeError, ValueError, OverflowError, RecursionError) as error:
+        raise ManifestParseError(f"Completion manifest cannot be canonicalized: {error}") from error
+    if hashlib.sha256(canonical_payload).hexdigest() != self_digest:
+        raise SelfHashMismatch("Completion manifest self_sha256 does not match.")
+
+    if payload.get("version") != MANIFEST_VERSION:
+        raise ManifestParseError("Unsupported completion manifest version.")
+    batch_id = payload.get("batch_id")
+    engine_identity = payload.get("engine_identity")
+    files = payload.get("files")
+    if not isinstance(batch_id, str) or not batch_id:
+        raise ManifestParseError("Completion manifest batch_id is invalid.")
+    if engine_identity != expected_engine_identity:
+        raise EngineIdentityMismatch("Completion manifest engine identity does not match.")
+    if not isinstance(files, list):
+        raise ManifestParseError("Completion manifest files must be a list.")
+
+    listed: list[tuple[str, str]] = []
+    for item in files:
+        if not isinstance(item, dict):
+            raise ManifestParseError("Completion manifest file entries must be objects.")
+        name, digest = item.get("name"), item.get("sha256")
+        if (
+            not isinstance(name, str)
+            or Path(name).name != name
+            or name in {"", MANIFEST_NAME, ".cleanup_pending"}
+            or not isinstance(digest, str)
+            or not _HEX_SHA256.fullmatch(digest)
+        ):
+            raise ManifestParseError("Completion manifest contains an invalid file entry.")
+        listed.append((name, digest))
+    if not listed or len({name for name, _ in listed}) != len(listed):
+        raise ManifestParseError("Completion manifest file list is empty or duplicated.")
+
+    actual = {
+        path.name for path in root.iterdir()
+        if path.is_file() and path.name not in {MANIFEST_NAME, ".cleanup_pending"}
+    }
+    if actual != {name for name, _ in listed}:
+        raise OutputHashMismatch("Output file membership does not match the completion manifest.")
+    for name, digest in listed:
+        path = root / name
+        if not path.is_file() or _sha256(path) != digest:
+            raise OutputHashMismatch(f"Output hash does not match for {name}.")
+    return BatchManifest(batch_id, engine_identity, tuple(sorted(listed)))
 
 def new_batch_id() -> str:
     return uuid4().hex
@@ -212,7 +242,7 @@ def _has_valid_completion_manifest(directory: Path) -> bool:
                 directory, expected_engine_identity=engine_identity
             ) is not None
         )
-    except (OSError, UnicodeError, ValueError, TypeError):
+    except (OSError, UnicodeError, ManifestValidationError, TypeError):
         return False
 
 

@@ -4,7 +4,12 @@ from datetime import datetime, timedelta, timezone
 
 import pytest
 
+from oneclick_cover import canonicalization
 from oneclick_cover.batch_contracts import (
+    EngineIdentityMismatch,
+    ManifestParseError,
+    OutputHashMismatch,
+    SelfHashMismatch,
     MANIFEST_NAME,
     BatchProgressEvent,
     mark_cleanup_pending,
@@ -24,9 +29,10 @@ def test_manifest_round_trip_validates_membership_hashes_and_engine(tmp_path):
         tmp_path, expected_engine_identity="rvc@pinned-sha"
     )
     assert loaded == written
-    assert read_completion_manifest(
-        tmp_path, expected_engine_identity="rvc@different-sha"
-    ) is None
+    with pytest.raises(EngineIdentityMismatch):
+        read_completion_manifest(
+            tmp_path, expected_engine_identity="rvc@different-sha"
+        )
 
 
 def test_manifest_rejects_truncation(tmp_path):
@@ -36,9 +42,10 @@ def test_manifest_rejects_truncation(tmp_path):
     )
     marker = tmp_path / MANIFEST_NAME
     marker.write_bytes(marker.read_bytes()[:20])
-    assert read_completion_manifest(
-        tmp_path, expected_engine_identity="rvc@pinned-sha"
-    ) is None
+    with pytest.raises(ManifestParseError):
+        read_completion_manifest(
+            tmp_path, expected_engine_identity="rvc@pinned-sha"
+        )
 
 
 def test_manifest_rejects_output_hash_mismatch_and_extra_files(tmp_path):
@@ -47,14 +54,16 @@ def test_manifest_rejects_output_hash_mismatch_and_extra_files(tmp_path):
         tmp_path, batch_id="batch-3", engine_identity="rvc@pinned-sha"
     )
     (tmp_path / "one.wav").write_bytes(b"changed audio")
-    assert read_completion_manifest(
-        tmp_path, expected_engine_identity="rvc@pinned-sha"
-    ) is None
+    with pytest.raises(OutputHashMismatch):
+        read_completion_manifest(
+            tmp_path, expected_engine_identity="rvc@pinned-sha"
+        )
     (tmp_path / "one.wav").write_bytes(b"original audio")
     (tmp_path / "extra.wav").write_bytes(b"unlisted audio")
-    assert read_completion_manifest(
-        tmp_path, expected_engine_identity="rvc@pinned-sha"
-    ) is None
+    with pytest.raises(OutputHashMismatch):
+        read_completion_manifest(
+            tmp_path, expected_engine_identity="rvc@pinned-sha"
+        )
 
 
 def test_manifest_rejects_self_hash_tampering(tmp_path):
@@ -66,9 +75,10 @@ def test_manifest_rejects_self_hash_tampering(tmp_path):
     payload = json.loads(marker.read_text(encoding="utf-8"))
     payload["batch_id"] = "tampered"
     marker.write_text(json.dumps(payload), encoding="utf-8")
-    assert read_completion_manifest(
-        tmp_path, expected_engine_identity="rvc@pinned-sha"
-    ) is None
+    with pytest.raises(SelfHashMismatch):
+        read_completion_manifest(
+            tmp_path, expected_engine_identity="rvc@pinned-sha"
+        )
 
 
 def test_progress_event_schema_validates_track_and_error_contract():
@@ -158,3 +168,49 @@ def test_staging_sweep_removes_corrupt_completion_marker(tmp_path):
     )
     assert removed == (staging,)
     assert not staging.exists()
+
+
+def test_legacy_json_dumps_manifest_is_rejected_by_jcs_reader(tmp_path):
+    (tmp_path / "legacy.wav").write_bytes(b"legacy audio")
+    payload = {
+        "version": 1,
+        "batch_id": "legacy",
+        "engine_identity": "rvc@pinned-sha",
+        "files": [{
+            "name": "legacy.wav",
+            "sha256": __import__("hashlib").sha256(b"legacy audio").hexdigest(),
+        }],
+    }
+    payload["self_sha256"] = __import__("hashlib").sha256(
+        json.dumps(payload, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode("utf-8")
+    ).hexdigest()
+    (tmp_path / MANIFEST_NAME).write_text(
+        json.dumps(payload, ensure_ascii=False, sort_keys=True, separators=(",", ":")),
+        encoding="utf-8",
+    )
+    with pytest.raises(ManifestParseError, match="RFC 8785"):
+        read_completion_manifest(
+            tmp_path, expected_engine_identity="rvc@pinned-sha"
+        )
+
+
+def test_manifest_writer_and_reader_use_shared_canonicalizer(monkeypatch, tmp_path):
+    (tmp_path / "one.wav").write_bytes(b"audio")
+    calls = []
+    original = canonicalization.canonicalize
+
+    def recording_canonicalize(value):
+        encoded = original(value)
+        calls.append(encoded)
+        return encoded
+
+    monkeypatch.setattr(canonicalization, "canonicalize", recording_canonicalize)
+    write_completion_manifest(
+        tmp_path, batch_id="shared", engine_identity="rvc@pinned-sha"
+    )
+    read_completion_manifest(
+        tmp_path, expected_engine_identity="rvc@pinned-sha"
+    )
+    assert len(calls) == 3
+    assert calls[0] == calls[1]
+    assert calls[2] == calls[0]
