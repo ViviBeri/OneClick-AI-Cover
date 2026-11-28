@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import logging
 import os
 import re
 import shutil
@@ -18,7 +19,7 @@ from typing import Literal
 from uuid import uuid4
 
 MANIFEST_NAME = "_COMPLETE.json"
-STAGING_PREFIX = ".oneclick-batch-"
+STAGING_PREFIX = ".staging-"
 MANIFEST_VERSION = 1
 _HEX_SHA256 = re.compile(r"^[0-9a-f]{64}$")
 
@@ -199,6 +200,22 @@ def mark_cleanup_pending(staging_directory: Path) -> None:
     _fsync_directory(Path(staging_directory))
 
 
+def _has_valid_completion_manifest(directory: Path) -> bool:
+    """Protect only batches whose completion manifest and outputs validate."""
+    try:
+        payload = json.loads((directory / MANIFEST_NAME).read_text(encoding="utf-8"))
+        engine_identity = payload.get("engine_identity") if isinstance(payload, dict) else None
+        return (
+            isinstance(engine_identity, str)
+            and bool(engine_identity)
+            and read_completion_manifest(
+                directory, expected_engine_identity=engine_identity
+            ) is not None
+        )
+    except (OSError, UnicodeError, ValueError, TypeError):
+        return False
+
+
 def sweep_stale_staging(
     staging_root: Path,
     *,
@@ -217,14 +234,19 @@ def sweep_stale_staging(
             or not (candidate / ".cleanup_pending").is_file()
         ):
             continue
-        modified = datetime.fromtimestamp(
-            candidate.stat().st_mtime, tz=timezone.utc
-        )
-        if modified >= cutoff:
-            continue
-        # A valid completion marker makes this directory non-disposable.
-        if (candidate / MANIFEST_NAME).exists():
-            continue
-        shutil.rmtree(candidate)
-        removed.append(candidate)
+        try:
+            modified = datetime.fromtimestamp(
+                candidate.stat().st_mtime, tz=timezone.utc
+            )
+            if modified >= cutoff:
+                continue
+            # A valid manifest protects published output; corrupt markers do not.
+            if _has_valid_completion_manifest(candidate):
+                continue
+            shutil.rmtree(candidate)
+            removed.append(candidate)
+        except OSError as error:
+            logging.getLogger(__name__).warning(
+                "Could not sweep stale staging directory %s: %s", candidate, error
+            )
     return tuple(removed)
