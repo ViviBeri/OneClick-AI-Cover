@@ -171,6 +171,22 @@ def test_staging_sweep_removes_corrupt_completion_marker(tmp_path):
     assert not staging.exists()
 
 
+
+def test_manifest_rejects_forged_canonicalization_identifier(tmp_path):
+    (tmp_path / "one.wav").write_bytes(b"audio")
+    write_completion_manifest(
+        tmp_path, batch_id="forged-id", engine_identity="rvc@pinned-sha"
+    )
+    marker = tmp_path / MANIFEST_NAME
+    payload = json.loads(marker.read_text(encoding="utf-8"))
+    payload["canonicalization"] = "json.dumps"
+    marker.write_text(json.dumps(payload), encoding="utf-8")
+
+    with pytest.raises(ManifestParseError, match="RFC 8785"):
+        read_completion_manifest(
+            tmp_path, expected_engine_identity="rvc@pinned-sha"
+        )
+
 def test_legacy_json_dumps_manifest_is_rejected_by_jcs_reader(tmp_path):
     (tmp_path / "legacy.wav").write_bytes(b"legacy audio")
     payload = {
@@ -215,7 +231,7 @@ def test_manifest_writer_and_reader_use_shared_canonicalizer(monkeypatch, tmp_pa
     )
 
     marker_bytes = (tmp_path / MANIFEST_NAME).read_bytes()
-    assert marker_bytes.endswith(b"\\n")
+    assert marker_bytes.endswith(bytes([10]))
     written_payload_bytes = marker_bytes[:-1]
     parsed = json.loads(written_payload_bytes.decode("utf-8"))
     original_self_hash = parsed.pop("self_sha256")
