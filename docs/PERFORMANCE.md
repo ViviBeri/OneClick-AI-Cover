@@ -100,3 +100,22 @@ factor (audio seconds divided by wall-clock seconds), CPU model, RAM, GPU and
 driver where applicable, backend/model versions, settings, and output quality
 metrics. Do not compare runs with different model weights or settings as if
 they were equivalent.
+
+
+## R1 batch inference adapter
+
+The pinned RVC CLI accepts a directory of input audio and constructs one VC
+instance before iterating through the files. The application batch adapter
+uses that directory mode so the selected model is loaded once per batch rather
+than once per track.
+
+The adapter stages only the explicitly selected vocal files in a private,
+temporary input directory, rejects duplicate output stems, invokes one RVC
+subprocess, validates every expected WAV output, and removes the staging
+directory when the process exits. It does not recursively scan the user's
+source folder or include unrelated audio files.
+
+This is an inference adapter, not yet a complete multi-song UI workflow.
+Batch-level Demucs orchestration, job progress/cancellation semantics, and
+end-to-end real-audio benchmarking remain separate integration work. The
+existing single-track conversion path remains unchanged.
