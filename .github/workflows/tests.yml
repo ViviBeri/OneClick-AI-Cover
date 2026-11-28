@@ -23,5 +23,32 @@ jobs:
           python-version: ${{ matrix.python-version }}
       - name: Install test dependencies
         run: python -m pip install --upgrade pip && python -m pip install -e . pytest
+      - name: Verify RFC 8785 dependency pins agree
+        run: |
+          python -c "import pathlib, tomllib; p=tomllib.loads(pathlib.Path('pyproject.toml').read_text()); req=pathlib.Path('requirements.txt').read_text().splitlines(); pin='rfc8785==0.1.4'; assert pin in p['project']['dependencies']; assert pin in req"
+      - name: Run RFC 8785 conformance tests
+        run: python -m pytest -q tests/test_canonicalization.py
       - name: Run tests
         run: python -m pytest -q
+      - name: Export JCS conformance manifest
+        run: python scripts/export_jcs_manifest.py --output jcs-${{ matrix.python-version }}.json
+      - name: Upload JCS conformance manifest
+        uses: actions/upload-artifact@v4
+        with:
+          name: jcs-${{ matrix.python-version }}
+          path: jcs-${{ matrix.python-version }}.json
+
+  compare-jcs:
+    name: Compare Python 3.11 and 3.12 canonical bytes
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Download JCS conformance manifests
+        uses: actions/download-artifact@v4
+        with:
+          pattern: jcs-*
+          path: artifacts
+          merge-multiple: true
+      - name: Verify byte and SHA-256 equality across Python versions
+        run: python scripts/compare_jcs_manifests.py

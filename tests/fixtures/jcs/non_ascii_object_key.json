@@ -1,0 +1,8 @@
+{
+  "source": "Repository policy negative fixture: object keys must be ASCII",
+  "input": {
+    "profile": {
+      "naïve": "must be rejected before JCS serialization"
+    }
+  }
+}
