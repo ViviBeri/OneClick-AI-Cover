@@ -169,7 +169,7 @@ def read_completion_manifest(
     if not isinstance(self_digest, str) or not _HEX_SHA256.fullmatch(self_digest):
         raise ManifestParseError("Completion manifest self_sha256 is missing or malformed.")
     try:
-        canonical_payload = canonicalize(payload)
+        canonical_payload = canonicalization.canonicalize(payload)
     except (TypeError, ValueError, OverflowError, RecursionError) as error:
         raise ManifestParseError(f"Completion manifest cannot be canonicalized: {error}") from error
     if hashlib.sha256(canonical_payload).hexdigest() != self_digest:
