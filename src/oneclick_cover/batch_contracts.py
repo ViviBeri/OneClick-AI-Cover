@@ -18,7 +18,7 @@ from pathlib import Path
 from typing import Literal
 from uuid import uuid4
 
-from oneclick_cover.canonicalization import canonicalize
+from oneclick_cover import canonicalization
 
 MANIFEST_NAME = "_COMPLETE.json"
 STAGING_PREFIX = ".staging-"
@@ -129,7 +129,7 @@ def write_completion_manifest(
         "engine_identity": engine_identity,
         "files": [{"name": name, "sha256": digest} for name, digest in entries],
     }
-    payload["self_sha256"] = hashlib.sha256(canonicalize(payload)).hexdigest()
+    payload["self_sha256"] = hashlib.sha256(canonicalization.canonicalize(payload)).hexdigest()
     encoded = canonicalize(payload) + bytes([10])
     descriptor, temporary_name = tempfile.mkstemp(
         prefix=".complete-", suffix=".tmp", dir=root

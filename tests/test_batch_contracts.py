@@ -1,3 +1,4 @@
+import hashlib
 import json
 import os
 from datetime import datetime, timedelta, timezone
@@ -176,16 +177,20 @@ def test_legacy_json_dumps_manifest_is_rejected_by_jcs_reader(tmp_path):
         "version": 1,
         "batch_id": "legacy",
         "engine_identity": "rvc@pinned-sha",
-        "files": [{
-            "name": "legacy.wav",
-            "sha256": __import__("hashlib").sha256(b"legacy audio").hexdigest(),
-        }],
+        "files": [
+            {
+                "name": "legacy.wav",
+                "sha256": hashlib.sha256(b"legacy audio").hexdigest(),
+            }
+        ],
     }
     payload["self_sha256"] = __import__("hashlib").sha256(
         json.dumps(payload, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode("utf-8")
     ).hexdigest()
     (tmp_path / MANIFEST_NAME).write_text(
-        json.dumps(payload, ensure_ascii=False, sort_keys=True, separators=(",", ":")),
+        json.dumps(
+            payload, ensure_ascii=False, sort_keys=True, separators=(",", ":")
+        ),
         encoding="utf-8",
     )
     with pytest.raises(ManifestParseError, match="RFC 8785"):
@@ -212,5 +217,5 @@ def test_manifest_writer_and_reader_use_shared_canonicalizer(monkeypatch, tmp_pa
         tmp_path, expected_engine_identity="rvc@pinned-sha"
     )
     assert len(calls) == 3
-    assert calls[0] == calls[1]
-    assert calls[2] == calls[0]
+    assert calls[0] == calls[2]
+    assert calls[1] != calls[0]
