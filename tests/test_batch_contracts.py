@@ -93,7 +93,7 @@ def test_progress_event_schema_validates_track_and_error_contract():
 
 
 def test_cleanup_pending_staging_is_removed_only_after_24_hours(tmp_path):
-    staging = tmp_path / ".oneclick-batch-abandoned"
+    staging = tmp_path / ".staging-abandoned"
     staging.mkdir()
     (staging / "partial.wav").write_bytes(b"partial")
     mark_cleanup_pending(staging)
@@ -107,26 +107,27 @@ def test_cleanup_pending_staging_is_removed_only_after_24_hours(tmp_path):
 
 
 def test_staging_sweep_preserves_recent_unmarked_and_completed_directories(tmp_path):
-    recent = tmp_path / ".oneclick-batch-recent"
+    recent = tmp_path / ".staging-recent"
     recent.mkdir()
     mark_cleanup_pending(recent)
 
-    future = tmp_path / ".oneclick-batch-future"
+    future = tmp_path / ".staging-future"
     future.mkdir()
     mark_cleanup_pending(future)
     future_time = datetime.now(timezone.utc) + timedelta(hours=2)
     os.utime(future, (future_time.timestamp(), future_time.timestamp()))
 
-    unmarked = tmp_path / ".oneclick-batch-unmarked"
+    unmarked = tmp_path / ".staging-unmarked"
     unmarked.mkdir()
     (unmarked / "partial.wav").write_bytes(b"partial")
 
-    completed = tmp_path / ".oneclick-batch-completed"
+    completed = tmp_path / ".staging-completed"
     completed.mkdir()
     (completed / "track.wav").write_bytes(b"audio")
     write_completion_manifest(
         completed, batch_id="done", engine_identity="rvc@pinned-sha"
     )
+    mark_cleanup_pending(completed)
     completed_time = datetime.now(timezone.utc) - timedelta(hours=48)
     os.utime(completed, (completed_time.timestamp(), completed_time.timestamp()))
 
@@ -141,3 +142,19 @@ def test_staging_sweep_preserves_recent_unmarked_and_completed_directories(tmp_p
     assert read_completion_manifest(
         completed, expected_engine_identity="rvc@pinned-sha"
     ) is not None
+
+
+
+def test_staging_sweep_removes_corrupt_completion_marker(tmp_path):
+    staging = tmp_path / ".staging-corrupt"
+    staging.mkdir()
+    (staging / "partial.wav").write_bytes(b"partial")
+    (staging / MANIFEST_NAME).write_text("{broken", encoding="utf-8")
+    mark_cleanup_pending(staging)
+    old = datetime.now(timezone.utc) - timedelta(hours=25)
+    os.utime(staging, (old.timestamp(), old.timestamp()))
+    removed = sweep_stale_staging(
+        tmp_path, older_than=datetime.now(timezone.utc) - timedelta(hours=24)
+    )
+    assert removed == (staging,)
+    assert not staging.exists()
