@@ -1,4 +1,4 @@
-""""Transactional batch publication contracts for M2.2a.
+"""Transactional batch publication contracts for M2.2a.
 
 A batch is complete only when its self-validating manifest is durable and
 matches every file in the published directory.
@@ -172,7 +172,7 @@ def read_completion_manifest(
             return None
         actual = {
             path.name for path in root.iterdir()
-            if path.is_file() and path.name != MANIFEST_NAME
+            if path.is_file() and path.name not in {MANIFEST_NAME, ".cleanup_pending"}
         }
         if actual != {name for name, _ in listed}:
             return None
